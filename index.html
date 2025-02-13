@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Update Firebase SDK versions -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <!-- Add overlay to prevent interaction -->
+    <div id="cookieOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 9999; display: none;"></div>
+    
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html" class="active">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <section class="album-feature">
+            <div class="album-text">
+                <h2>TGPSI 2022 - 2025</h2>
+                <h1>CONTADOR</h1>
+                <p>Sistema inovador de monitorização de energia utilizando Arduino. Acompanhe em tempo real o seu consumo energético de forma eficiente e fácil.</p>
+                <a href="#" class="see-album">Saber Mais ➜</a>
+            </div>
+            <div class="login-container">
+                <!-- Login Form (shown when logged out) -->
+                <div id="loginSection" style="display: none;">
+                    <h2>Entrar</h2>
+                    <p>Aceda à sua conta para monitorizar o consumo</p>
+                    <form class="login-form" id="loginForm">
+                        <input type="email" id="loginEmail" placeholder="Email" required>
+                        <input type="password" id="loginPassword" placeholder="Palavra-passe" required>
+                        <a href="#" class="forgot-password">Esqueceu a palavra-passe?</a>
+                        <button type="submit" class="sign-in-btn">Entrar</button>
+                        <div class="divider">ou</div>
+                        <button type="button" class="google-sign-in" id="googleSignIn">
+                            <i class="fab fa-google"></i> Entrar com Google
+                        </button>
+                    </form>
+                    <p class="signup-text">Novo por aqui? <a href="#" class="toggle-form" data-form="signup" style="cursor: pointer; color: #ff4444; text-decoration: underline;">Registar</a></p>
+                </div>
+
+                <!-- User Profile (shown when logged in) -->
+                <div id="userSection" style="display: none;">
+                    <h2>Bem-vindo!</h2>
+                    <div class="user-profile">
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                <img id="userProfilePicture" src="https://ui-avatars.com/api/?name=User&background=random&color=fff&size=80" alt="Profile Picture">
+                            </div>
+                            <p id="userName">Carregando...</p>
+                            <p id="userEmail" class="user-email">Carregando...</p>
+                            <div class="user-plan">
+                                <i class="fas fa-crown"></i>
+                                <span id="userPlan">Carregando...</span>
+                            </div>
+                        </div>
+                        <div class="user-buttons">
+                            <button class="user-btn dashboard-btn" onclick="window.location.href='dashboard.html'">
+                                <i class="fas fa-chart-line"></i>
+                                Dashboard
+                                <span class="notification-badge" id="dashboardNotificationBadge" style="display: none"></span>
+                            </button>
+                            <button class="user-btn" id="logoutBtn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Sair
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div id="container" style="top: -500px;">
+            <div class="square"></div>
+            <div class="square"></div>
+            <div class="square"></div>
+            <div class="square"></div>
+          </div>
+    </main>
+    <!-- Sign Up Form (initially hidden) -->
+    <div class="form-section signup-section">
+        <h2>Criar Conta</h2>
+        <p>Junte-se à nossa comunidade sustentável</p>
+        <form class="login-form" id="signupForm">
+            <input type="text" id="signupName" placeholder="Nome Completo" required>
+            <input type="email" id="signupEmail" placeholder="Email" required>
+            <div class="form-group">
+                <input type="password" id="signupPassword" placeholder="Palavra-passe" required>
+                <div class="password-strength-container">
+                    <div class="strength-bar-container">
+                        <div id="strengthBar" class="strength-bar"></div>
+                    </div>
+                </div>
+            </div>
+            <input type="password" id="signupConfirmPassword" placeholder="Confirmar Palavra-passe" required>
+            <button type="submit" class="sign-in-btn">Criar Conta</button>
+            <div class="divider">ou</div>
+            <button type="button" class="google-sign-in" id="googleSignUp">
+                <i class="fab fa-google"></i> Registar com Google
+            </button>
+        </form>
+        <p class="signup-text">Já tem conta? <a href="#" class="toggle-form" data-form="signin">Entrar</a></p>
+    </div>
+
+    <!-- Update cookie consent z-index to be above overlay -->
+    <div id="cookieConsent" class="cookie-consent" style="display: none; z-index: 10000;">
+        <div class="cookie-content">
+            <div class="cookie-header">
+                <i class="fas fa-cookie-bite"></i>
+                <h3>Cookies & Privacidade</h3>
+            </div>
+            <p>Utilizamos cookies para melhorar sua experiência no site. Ao continuar navegando, você concorda com nossa <a href="politica.html">Política de Privacidade</a>.</p>
+            <div class="cookie-buttons">
+                <button id="acceptCookies" class="accept-cookies-btn">
+                    <i class="fas fa-check"></i>
+                    Aceitar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Firebase configuration and authentication script -->
+    <script>
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Function to check authentication
+        function checkAuth(e) {
+            if (!auth.currentUser) {
+                e.preventDefault();
+                alert('Por favor, faça login para acessar esta página.');
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Add click handler to dashboard links
+        document.querySelectorAll('a[href="dashboard.html"]').forEach(link => {
+            link.addEventListener('click', checkAuth);
+        });
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Check if email is verified
+                    if (!user.emailVerified) {
+                        // Show verification popup
+                        const popup = document.createElement('div');
+                        popup.className = 'auth-popup-overlay';
+                        popup.innerHTML = `
+                            <div class="auth-popup">
+                                <div class="auth-popup-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <h2>Email Não Verificado</h2>
+                                <p>Por favor, verifique seu email antes de fazer login.</p>
+                                <p>Foi enviado um link de verificação para ${email}</p>
+                                <p class="verification-note">Verifique sua caixa de entrada e spam.</p>
+                                <button onclick="checkVerification('${user.uid}', null, '${email}')" class="auth-popup-button">Já verifiquei meu email</button>
+                                <button onclick="resendVerification()" class="auth-popup-button" style="background: #666; margin-top: 10px;">Reenviar Email</button>
+                                <button onclick="handleUnverifiedLogout()" class="auth-popup-button cancel-btn">Fechar</button>
+                            </div>
+                        `;
+                        document.body.appendChild(popup);
+                        
+                        // Sign out until email is verified
+                        return auth.signOut();
+                    }
+
+                    // Email is verified, proceed with login
+                    return db.collection('users').doc(user.uid).update({
+                        activities: firebase.firestore.FieldValue.arrayUnion({
+                            action: 'login',
+                            timestamp: new Date().getTime(),
+                            userId: user.uid,
+                            userName: user.displayName || 'Usuário'
+                        })
+                    });
+                })
+                .then(() => {
+                    const user = auth.currentUser;
+                    if (user && user.emailVerified) {
+                        window.location.href = 'dashboard.html';
+                    }
+                })
+                .catch((error) => {
+                    showError(error.message);
+                });
+        });
+
+        // Google Sign In
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        
+        document.getElementById('googleSignIn').addEventListener('click', () => {
+            auth.signInWithPopup(googleProvider)
+                .then(async (result) => {
+                    const user = result.user;
+                    
+                    try {
+                        // Check if user document exists
+                        const userDoc = await db.collection('users').doc(user.uid).get();
+                        
+                        if (!userDoc.exists) {
+                            // Create new user document if it doesn't exist
+                            await db.collection('users').doc(user.uid).set({
+                                email: user.email,
+                                name: user.displayName,
+                                emailVerified: user.emailVerified,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                plan: 'basic',
+                                settings: {
+                                    autoSave: true,
+                                    notifications: true,
+                                    cloud: true
+                                },
+                                activities: [{
+                                    action: 'account_created',
+                                    timestamp: new Date().getTime(),
+                                    userId: user.uid,
+                                    userName: user.displayName || 'Usuário'
+                                }],
+                                readings: []
+                            });
+                        }
+
+                        // Log the login activity
+                        await db.collection('users').doc(user.uid).update({
+                            activities: firebase.firestore.FieldValue.arrayUnion({
+                                action: 'login',
+                                timestamp: new Date().getTime(),
+                                userId: user.uid,
+                                userName: user.displayName || 'Usuário'
+                            }),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+
+                        window.location.href = 'dashboard.html';
+                    } catch (error) {
+                        console.error("Error during Google sign in:", error);
+                        showError("Erro ao fazer login com Google. Por favor, tente novamente.");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Google sign in error:", error);
+                    showError(error.message);
+                });
+        });
+
+        // Add this after Firebase initialization
+        const imageCache = {
+            async get(key) {
+                try {
+                    const cache = await caches.open('profile-images');
+                    const response = await cache.match(key);
+                    return response ? response.blob() : null;
+                } catch (e) {
+                    console.error('Cache get error:', e);
+                    return null;
+                }
+            },
+            
+            async set(key, blob) {
+                try {
+                    const cache = await caches.open('profile-images');
+                    const response = new Response(blob);
+                    await cache.put(key, response);
+                } catch (e) {
+                    console.error('Cache set error:', e);
+                }
+            }
+        };
+
+        const ALLOWED_HTML_TAGS = {
+            'b': [], // bold
+            'strong': [], // bold
+            'i': [], // italic
+        };
+
+        function sanitizeHTML(input) {
+            const doc = new DOMParser().parseFromString(input, 'text/html');
+            const sanitizedContent = [];
+            
+            function processNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    sanitizedContent.push(node.textContent);
+                    return;
+                }
+                
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tag = node.tagName.toLowerCase();
+                    if (ALLOWED_HTML_TAGS.hasOwnProperty(tag)) {
+                        sanitizedContent.push(`<${tag}>`);
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                        sanitizedContent.push(`</${tag}>`);
+                    } else {
+                        // For disallowed tags, just process their children as text
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                    }
+                }
+            }
+            
+            processNode(doc.body);
+            return sanitizedContent.join('');
+        }
+
+        // Function to load and cache profile picture
+        async function loadProfilePicture(url, imgElement, userName) {
+            if (!url) {
+                imgElement.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random&color=fff&size=80`;
+                return;
+            }
+
+            // Try to get from cache first
+            const cachedImage = await imageCache.get(url);
+            if (cachedImage) {
+                imgElement.src = URL.createObjectURL(cachedImage);
+                return;
+            }
+
+            // If not in cache, fetch and cache
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                await imageCache.set(url, blob);
+                imgElement.src = URL.createObjectURL(blob);
+            } catch (error) {
+                console.error('Error loading image:', error);
+                imgElement.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random&color=fff&size=80`;
+            }
+        }
+
+        // Update the auth state change handler
+        firebase.auth().onAuthStateChanged(function(user) {
+            const loginSection = document.getElementById('loginSection');
+            const userSection = document.getElementById('userSection');
+            const signupSection = document.querySelector('.signup-section');
+
+            if (user) {
+                // User is signed in
+                loginSection.style.display = 'none';
+                userSection.style.display = 'block';
+                signupSection.style.display = 'none';
+                
+                // Get user data from Firestore
+                db.collection('users').doc(user.uid).get().then((doc) => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        const userName = sanitizeHTML(userData.name || 'Usuário');
+                        document.getElementById('userName').innerHTML = `
+                            ${userData.isDev ? '<span class="dev-icon-wrapper"><i class="fas fa-hammer dev-icon"></i></span>' : ''}
+                            ${userName}
+                            ${userData.isGay ? '<span class="lgbt-badge" title="LGBT+"><i class="fas fa-heart" style="padding-right: 0;"></i></span>' : ''}
+                        `;
+                        document.getElementById('userEmail').textContent = sanitizeHTML(userData.email);
+                        document.getElementById('userPlan').textContent = sanitizeHTML(userData.plan);
+                        
+                        // Update profile picture with caching
+                        const userProfilePic = document.getElementById('userProfilePicture');
+                        loadProfilePicture(userData.profilePicture, userProfilePic, userName);
+
+                        // Check for notifications
+                        db.collection('users').doc(user.uid).onSnapshot((doc) => {
+                            const userData = doc.data();
+                            const hasNotifications = userData?.notifications?.some(n => !n.read);
+                            const badge = document.getElementById('dashboardNotificationBadge');
+                            if (badge) {
+                                badge.style.display = hasNotifications ? 'block' : 'none';
+                            }
+                        });
+                    }
+                }).catch((error) => {
+                    console.error("Error getting user data:", error);
+                });
+            } else {
+                // No user is signed in
+                loginSection.style.display = 'block';
+                userSection.style.display = 'none';
+                signupSection.style.display = 'none';
+            }
+        });
+
+        // Add this function to log user activities
+        function logUserActivity(action) {
+            const user = firebase.auth().currentUser;
+            if (!user) return Promise.resolve();
+
+            const activity = {
+                action: action,
+                timestamp: new Date().getTime(),
+                userId: user.uid,
+                userName: user.displayName || 'Usuário'
+            };
+
+            return db.collection('users').doc(user.uid).update({
+                activities: firebase.firestore.FieldValue.arrayUnion(activity)
+            });
+        }
+
+        // Update the logout handler
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            // Log the logout activity first
+            db.collection('users').doc(user.uid).update({
+                activities: firebase.firestore.FieldValue.arrayUnion({
+                    action: 'logout',
+                    timestamp: new Date().getTime(),
+                    userId: user.uid,
+                    userName: user.displayName || 'Usuário'
+                })
+            }).then(() => {
+                firebase.auth().signOut().then(() => {
+                    window.location.href = 'index.html';
+                });
+            });
+        });
+
+        // Update the handleSignup function
+        function handleSignup(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const name = sanitizeHTML(form.querySelector('input[placeholder="Nome Completo"]').value.trim());
+            const email = sanitizeHTML(form.querySelector('input[placeholder="Email"]').value.trim());
+            const password = form.querySelector('input[placeholder="Palavra-passe"]').value;
+            const confirmPassword = form.querySelector('input[placeholder="Confirmar Palavra-passe"]').value;
+
+            // Validate email and password...
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('Por favor, insira um endereço de email válido');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert('As palavras-passe não coincidem');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('A palavra-passe deve ter pelo menos 6 caracteres');
+                return;
+            }
+
+            // Create user but don't create profile yet
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Send verification email first
+                    return user.sendEmailVerification().then(() => {
+                        // Create initial user data with sanitized inputs
+                        const userData = {
+                            email: sanitizeHTML(email),
+                            name: sanitizeHTML(name),
+                            emailVerified: false,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            plan: 'basic',
+                            settings: {
+                                autoSave: true,
+                                notifications: true,
+                                cloud: true
+                            },
+                            activities: [{
+                                action: 'account_created',
+                                timestamp: new Date().getTime(),
+                                userId: user.uid,
+                                userName: sanitizeHTML(name) || 'Usuário'
+                            }],
+                            readings: []
+                        };
+
+                        // Save initial user data
+                        return db.collection('users').doc(user.uid).set(userData).then(() => {
+                            // Show verification popup
+                            const popup = document.createElement('div');
+                            popup.className = 'auth-popup-overlay';
+                            popup.innerHTML = `
+                                <div class="auth-popup">
+                                    <div class="auth-popup-icon">
+                                        <i class="fas fa-envelope"></i>
+                                    </div>
+                                    <h2>Verificar Email</h2>
+                                    <p>Foi enviado um link de verificação para ${email}</p>
+                                    <p>Por favor, verifique seu email e clique no link para ativar sua conta.</p>
+                                    <p class="verification-note">Após verificar, faça login novamente.</p>
+                                    <button onclick="checkVerification('${user.uid}', '${name}', '${email}')" class="auth-popup-button">Já verifiquei meu email</button>
+                                    <button onclick="resendVerification()" class="auth-popup-button" style="background: #666; margin-top: 10px;">Reenviar Email</button>
+                                    <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">Fechar</button>
+                                </div>
+                            `;
+                            document.body.appendChild(popup);
+                            
+                            // Sign out until email is verified
+                            return auth.signOut();
+                        });
+                    });
+                })
+                .catch((error) => {
+                    let errorMessage;
+                    switch (error.code) {
+                        case 'auth/email-already-in-use':
+                            errorMessage = 'Este email já está registrado';
+                            break;
+                        case 'auth/invalid-email':
+                            errorMessage = 'Email inválido';
+                            break;
+                        case 'auth/operation-not-allowed':
+                            errorMessage = 'Operação não permitida';
+                            break;
+                        case 'auth/weak-password':
+                            errorMessage = 'A palavra-passe é muito fraca';
+                            break;
+                        default:
+                            errorMessage = error.message;
+                    }
+                    alert('Erro no registro: ' + errorMessage);
+                });
+        }
+
+        // Add these helper functions
+        function checkVerification(uid, name, email) {
+            // Re-authenticate to get fresh user object
+            auth.signInWithEmailAndPassword(email, document.querySelector('input[placeholder="Palavra-passe"]').value)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Force refresh the token
+                    return user.reload().then(() => {
+                        if (user.emailVerified) {
+                            // Create or update user profile now that email is verified
+                            const userData = {
+                                email: email,
+                                emailVerified: true,
+                                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+
+                            if (name) {
+                                userData.name = name;
+                                userData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                                userData.plan = 'basic';
+                                userData.activities = [{
+                                    action: 'account_created',
+                                    timestamp: new Date().getTime(),
+                                    userId: uid,
+                                    userName: name || 'Usuário'
+                                }];
+                                userData.readings = [];
+                            }
+
+                            return db.collection('users').doc(uid).set(userData, { merge: true })
+                                .then(() => {
+                                    window.location.href = 'dashboard.html';
+                                });
+                        } else {
+                            alert('Por favor, verifique seu email primeiro.');
+                            return auth.signOut();
+                        }
+                    });
+                })
+                .catch(error => {
+                    alert('Erro ao verificar email: ' + error.message);
+                });
+        }
+
+        function resendVerification() {
+            const user = auth.currentUser;
+            if (user) {
+                user.sendEmailVerification()
+                    .then(() => {
+                        alert('Email de verificação reenviado!');
+                    })
+                    .catch(error => {
+                        alert('Erro ao reenviar email: ' + error.message);
+                    });
+            } else {
+                alert('Por favor, tente se registrar novamente.');
+            }
+        }
+
+        // Add helper function for unverified logout
+        function handleUnverifiedLogout() {
+            auth.signOut().then(() => {
+                document.querySelector('.auth-popup-overlay').remove();
+            });
+        }
+
+        // Update the DOMContentLoaded event handler
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded'); // Debug log
+            
+            const signupLink = document.querySelector('.toggle-form[data-form="signup"]');
+            console.log('Signup link:', signupLink); // Debug log
+            
+            signupLink.addEventListener('click', (e) => {
+                console.log('Signup clicked'); // Debug log
+                e.preventDefault();
+                
+                // Create and show registration popup
+                const popup = document.createElement('div');
+                popup.className = 'auth-popup-overlay';
+                popup.innerHTML = `
+                    <div class="auth-popup">
+                        <div class="auth-popup-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <h2>Criar Conta</h2>
+                        <form id="signupPopupForm" class="auth-popup-form">
+                            <div class="form-group">
+                                <input type="text" id="signupName" placeholder="Nome Completo" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="email" id="signupEmail" placeholder="Email" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="password" id="signupPassword" placeholder="Palavra-passe" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="password" id="signupConfirmPassword" placeholder="Confirmar Palavra-passe" required>
+                                <div class="password-strength-container">
+                                    <div class="strength-bar-container">
+                                        <div id="strengthBar" class="strength-bar"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="auth-popup-button">Criar Conta</button>
+                            <div class="divider">ou</div>
+                            <button type="button" class="google-sign-in" id="googleSignUpPopup">
+                                <i class="fab fa-google"></i> Registar com Google
+                            </button>
+                        </form>
+                        <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">Cancelar</button>
+                    </div>
+                `;
+                document.body.appendChild(popup);
+
+                // Add form submission handler for the popup form
+                document.getElementById('signupPopupForm').addEventListener('submit', handleSignup);
+                
+                // Add Google signup handler for the popup
+                document.getElementById('googleSignUpPopup').addEventListener('click', handleGoogleSignup);
+            });
+
+            // Update the password strength checker
+            document.body.addEventListener('input', function(e) {
+                if (e.target && (e.target.id === 'signupPassword' || e.target.matches('.auth-popup-form input[type="password"]'))) {
+                    const password = e.target.value;
+                    const formGroup = e.target.closest('.form-group');
+                    const strengthBar = formGroup.querySelector('.strength-bar');
+                    
+                    if (!strengthBar) return;
+                    
+                    // Check password strength
+                    let strength = 0;
+                    
+                    if (password.length >= 8) strength += 1;
+                    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength += 1;
+                    if (password.match(/\d/)) strength += 1;
+                    if (password.match(/[^a-zA-Z\d]/)) strength += 1;
+                    
+                    // Update strength bar class
+                    if (password.length === 0) {
+                        strengthBar.className = 'strength-bar';
+                    } else {
+                        switch(strength) {
+                            case 0:
+                            case 1:
+                                strengthBar.className = 'strength-bar strength-weak';
+                                break;
+                            case 2:
+                            case 3:
+                                strengthBar.className = 'strength-bar strength-medium';
+                                break;
+                            case 4:
+                                strengthBar.className = 'strength-bar strength-strong';
+                                break;
+                        }
+                    }
+                }
+            });
+        });
+
+        function updateUserProfile(user) {
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const userData = doc.data();
+                const userName = document.getElementById('userName');
+                if (userData.isGay) {
+                    userName.classList.add('rainbow-text');
+                }
+                userName.innerHTML = `
+                    ${userData.isDev ? '<span class="dev-icon-wrapper"><i class="fas fa-hammer dev-icon"></i></span>' : ''}
+                    ${sanitizeHTML(userData.name || 'Usuário')}
+                    ${userData.isGay ? '<span class="lgbt-badge" title="LGBT+"><i class="fas fa-heart" style="padding-right: 0;"></i></span>' : ''}
+                `;
+                document.getElementById('userEmail').textContent = sanitizeHTML(userData.email);
+                document.getElementById('userPlan').textContent = sanitizeHTML(userData.plan);
+                
+                // Update profile picture with caching
+                const userProfilePic = document.getElementById('userProfilePicture');
+                loadProfilePicture(userData.profilePicture, userProfilePic, sanitizeHTML(userData.name || user.displayName || user.email));
+            }).catch((error) => {
+                console.error("Error getting user data:", error);
+            });
+        }
+
+        function handleGoogleSignup() {
+            auth.signInWithPopup(googleProvider)
+                .then(async (result) => {
+                    const user = result.user;
+                    
+                    try {
+                        // Check if user document exists
+                        const userDoc = await db.collection('users').doc(user.uid).get();
+                        
+                        if (!userDoc.exists) {
+                            // Create new user document with sanitized inputs
+                            await db.collection('users').doc(user.uid).set({
+                                email: sanitizeHTML(user.email),
+                                name: sanitizeHTML(user.displayName),
+                                emailVerified: user.emailVerified,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                plan: 'basic',
+                                settings: {
+                                    autoSave: true,
+                                    notifications: true,
+                                    cloud: true
+                                },
+                                activities: [{
+                                    action: 'account_created',
+                                    timestamp: new Date().getTime(),
+                                    userId: user.uid,
+                                    userName: sanitizeHTML(user.displayName) || 'Usuário'
+                                }],
+                                readings: []
+                            });
+                        }
+
+                        // Log the signup activity with sanitized input
+                        await db.collection('users').doc(user.uid).update({
+                            activities: firebase.firestore.FieldValue.arrayUnion({
+                                action: 'signup',
+                                timestamp: new Date().getTime(),
+                                userId: user.uid,
+                                userName: sanitizeHTML(user.displayName) || 'Usuário'
+                            }),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+
+                        window.location.href = 'dashboard.html';
+                    } catch (error) {
+                        console.error("Error during Google sign up:", error);
+                        alert("Erro ao registrar com Google. Por favor, tente novamente.");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Google sign up error:", error);
+                    alert(error.message);
+                });
+        }
+
+        // Add this to your existing script
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('cookieOverlay');
+            const cookieConsent = document.getElementById('cookieConsent');
+
+            // Check if user has already accepted cookies
+            if (!localStorage.getItem('cookiesAccepted')) {
+                setTimeout(() => {
+                    overlay.style.display = 'block';
+                    cookieConsent.style.display = 'block';
+                    
+                    // Prevent scrolling
+                    document.body.style.overflow = 'hidden';
+                    
+                    // Disable all interactive elements except cookie consent
+                    document.querySelectorAll('a, button, input, select, textarea').forEach(element => {
+                        if (!element.closest('#cookieConsent')) {
+                            element.style.pointerEvents = 'none';
+                        }
+                    });
+                }, 500);
+            }
+
+            // Handle accept cookies
+            document.getElementById('acceptCookies').addEventListener('click', function() {
+                localStorage.setItem('cookiesAccepted', 'true');
+                
+                // Remove overlay and enable interaction
+                overlay.style.display = 'none';
+                cookieConsent.style.display = 'none';
+                document.body.style.overflow = '';
+                
+                // Re-enable all interactive elements
+                document.querySelectorAll('a, button, input, select, textarea').forEach(element => {
+                    element.style.pointerEvents = '';
+                });
+            });
+        });
+    </script>
+
+    <style>
+        .user-profile {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0,0,0, 0.37);
+        }
+
+        .user-info {
+            margin-bottom: 25px;
+            position: relative;
+            padding-top: 60px;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #290d0d, #a92525);
+            border-radius: 50%;
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        #userProfilePicture {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-avatar i {
+            display: none;
+        }
+
+        #userName {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #fff;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-email {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .user-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .user-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .dashboard-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .dashboard-btn:hover {
+            background: linear-gradient(45deg, #45a049, #3d8b40);
+            transform: translateY(-2px);
+        }
+
+        #logoutBtn {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+
+        #logoutBtn:hover {
+            background: linear-gradient(45deg, #cc0000, #b30000);
+            transform: translateY(-2px);
+        }
+
+        .user-btn i {
+            font-size: 1.1em;
+        }
+
+        .user-plan {
+            margin-top: -20px;
+            padding: 5px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #fff;
+        }
+
+        .user-plan i {
+            color: #ffd700;
+            font-size: 1em;
+        }
+
+        #userPlan {
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .auth-popup-form {
+            display: flex;
+            flex-direction: column; 
+            margin: 1.5rem 0;
+        }
+
+        .auth-popup-form .form-group {
+            position: relative;
+            margin-bottom: 0.5rem;
+        }
+
+        .fa-solid, .fas {
+            padding: 0;
+        }
+
+        .auth-popup-form input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup-form input:focus {
+            outline: none;
+            border-color: rgba(255, 68, 68, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .auth-popup-form input::placeholder {
+            color: #666;
+        }
+
+        .auth-popup .cancel-btn {
+            background: #666;
+            margin-top: 1rem;
+        }
+
+        .auth-popup .cancel-btn:hover {
+            background: #777;
+        }
+
+        .auth-popup .google-sign-in {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 0.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup .google-sign-in:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .auth-popup .divider {
+            text-align: center;
+            color: #666;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .auth-popup .divider::before,
+        .auth-popup .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .auth-popup .divider::before {
+            left: 0;
+        }
+
+        .auth-popup .divider::after {
+            right: 0;
+        }
+
+        .auth-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .auth-popup {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+            position: relative;
+            z-index: 10000;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        body {
+            position: relative;
+        }
+
+        #container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .album-feature {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Add these styles to your existing style section */
+        .auth-popup-icon {
+            font-size: 2.5rem;
+            color: #ff4444;
+            margin-bottom: 1rem;
+        }
+
+        .auth-popup h2 {
+            color: #fff;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        .auth-popup-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .auth-popup-button:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        .auth-popup-form input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-popup-form input:focus {
+            outline: none;
+            border-color: #ff4444;
+        }
+
+        .verification-note {
+            color: #ffc107;
+            font-size: 0.9rem;
+            margin: 1rem 0;
+            padding: 10px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 8px;
+        }
+
+        .auth-popup p {
+            color: #888;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .dev-icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 4px;
+        }
+
+        .dev-icon {
+            color: #ff4444;
+            font-size: 0.9em;
+            margin-right: 2px;
+            padding-right: 0;
+        }
+
+        .message-header strong {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .lgbt-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+            font-size: 0.9em;
+            cursor: help;
+            background: linear-gradient(45deg, 
+                #ff0018,
+                #ffa52c,
+                #ffff41,
+                #008018,
+                #0000f9,
+                #86007d
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            transition: transform 0.3s ease;
+        }
+
+        .lgbt-badge:hover {
+            transform: scale(1.2);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 13px;
+            height: 13px;
+            background: #ff4444;
+            border-radius: 50%;
+            border: 2px solid #1a1a1a;
+        }
+
+        .password-strength-container {
+            width: 100%;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .strength-bar-container {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .strength-bar.strength-weak {
+            width: 25%;
+            background: #ff4444;
+        }
+
+        .strength-bar.strength-medium {
+            width: 50%;
+            background: #ffd700;
+        }
+
+        .strength-bar.strength-strong {
+            width: 100%;
+            background: #4CAF50;
+        }
+
+        .cookie-consent {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 400px;
+            z-index: 10000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.3s ease;
+        }
+
+        .cookie-content {
+            color: #fff;
+        }
+
+        .cookie-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .cookie-header i {
+            font-size: 1.5rem;
+            color: #ff4444;
+        }
+
+        .cookie-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .cookie-content p {
+            color: #ccc;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        .cookie-content a {
+            color: #ff4444;
+            text-decoration: none;
+        }
+
+        .cookie-content a:hover {
+            text-decoration: underline;
+        }
+
+        .cookie-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .cookie-settings-btn, .accept-cookies-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .cookie-settings-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .cookie-settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .accept-cookies-btn {
+            background: #ff4444;
+            color: white;
+        }
+
+        .accept-cookies-btn:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+    </style>
+</body>
+</html> 

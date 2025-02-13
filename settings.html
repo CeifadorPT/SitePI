@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+    <style>
+        .auth-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .auth-popup {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+
+        .auth-popup-icon {
+            font-size: 2.5rem;
+            color: #ff4444;
+            margin-bottom: 1rem;
+            margin-right: -30px;
+        }
+
+        .auth-popup h2 {
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .auth-popup p {
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-popup-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup-button:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            width: 100%;
+        }
+
+        .connect-btn {
+            background: #4CAF50;
+            flex: 1;
+        }
+
+        .connect-btn:hover {
+            background: #45a049;
+        }
+
+        .save-btn {
+            background: #2196F3;
+        }
+
+        .save-btn.small {
+            padding: 0.8rem 1.2rem;
+            min-width: 80px;
+        }
+
+        .save-btn:hover {
+            background: #1976D2;
+        }
+
+        /* Remove all old notification styles */
+        .notification-overlay {
+            display: none;
+        }
+
+        .notification-overlay .notification-content {
+            display: none;
+        }
+
+        /* Remove these old notification styles */
+        .notification,
+        .notification > .notification-content,
+        .notification.show,
+        .notification i,
+        .notification.success,
+        .notification.success i,
+        .notification.error,
+        .notification.error i,
+        .notification.info,
+        .notification.info i,
+        .notification-title,
+        .notification-message {
+            /* These styles are now in script.js */
+            display: none;
+        }
+    </style>
+    <!-- Add Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Initialize Firebase -->
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+    </script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html" class="active">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <section class="settings-section">
+            <h1 class="settings-title">Configurações</h1>
+            <div class="settings-grid">
+                <!-- Auto Salvamento -->
+                <div class="settings-card" data-modal-type="autoSave">
+                    <div class="settings-header">
+                        <div class="settings-icon">
+                            <i class="fas fa-save"></i>
+                        </div>
+                        <div class="settings-info">
+                            <h2>Auto Salvar</h2>
+                            <p>Salvamento automático de leituras</p>
+                        </div>
+                        <div class="settings-badge">Sistema</div>
+                    </div>
+                    <div class="settings-content">
+                        <p>Configure o intervalo de salvamento automático das leituras de tensão para garantir que nenhum dado seja perdido.</p>
+                        <div class="settings-controls">
+                            <button class="configure-btn">Definir Intervalo</button>
+                            <label class="toggle">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detecção de Anomalias -->
+                <div class="settings-card" data-modal-type="notifications">
+                    <div class="settings-header">
+                        <div class="settings-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="settings-info">
+                            <h2>Detecção de Anomalias</h2>
+                            <p>Monitoramento de valores anormais</p>
+                        </div>
+                        <div class="settings-badge alert">Alertas</div>
+                    </div>
+                    <div class="settings-content">
+                        <p>Define os limites de tensão para detecção automática de anomalias e notificações em tempo real.</p>
+                        <div class="settings-controls">
+                            <button class="configure-btn">Configurar Limites</button>
+                            <label class="toggle">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card" data-modal-type="cloud">
+                    <div class="settings-header">
+                        <div class="settings-icon">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        </div>
+                        <div class="settings-info">
+                            <h2>Salvar Na Nuvem</h2>
+                            <p>Salvamento automático de leituras na nuvem</p>
+                        </div>
+                        <div class="settings-badge">Sistema</div>
+                    </div>
+                    <div class="settings-content">
+                        <p>Mantenha seus dados seguros na nuvem com backup automático. Escolha a frequência de sincronização e gerencie seu espaço de armazenamento.</p>
+                        <div class="settings-controls">
+                            <button class="configure-btn">Definir Cloud</button>
+                            <label class="toggle">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuração Arduino -->
+                <div class="settings-card" data-modal-type="port">
+                    <div class="settings-header">
+                        <div class="settings-icon">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="settings-info">
+                            <h2>Arduino</h2>
+                            <p>Configuração do dispositivo</p>
+                        </div>
+                        <div class="settings-badge hardware">Hardware</div>
+                    </div>
+                    <div class="settings-content">
+                        <p>Configure a porta serial e as definições de comunicação com o Arduino.<br>‎‎‎‎‎‎‎‎ㅤ</p>
+                        <div class="settings-controls">
+                            <button class="configure-btn">Configurar Porta</button>
+                        </div>
+                    </div>
+                </div>
+
+                
+            </div>
+        </section>
+    </main>
+    <!-- Modal -->
+    <div class="modal-backdrop" id="autoSaveModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Configuração de Auto Salvamento</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="form-group">
+                    <label for="save-interval">Intervalo de Scaneamento:</label>
+                    <select id="save-interval" class="form-control">
+                        <option value="1">1 segundo</option>
+                        <option value="2">2 segundos</option>
+                        <option value="3">3 segundos</option>
+                        <option value="4">4 segundos</option>
+                        <option value="5">5 segundos</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="configure-btn" onclick="saveInterval()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div class="modal-backdrop" id="notificationsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Configuração de Anomalias</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="form-group">
+                    <label for="min-voltage">Tensão Mínima (V):</label>
+                    <select id="min-voltage" class="form-control">
+                        <option value="1">1V</option>
+                        <option value="2">2V</option>
+                        <option value="3">3V</option>
+                        <option value="4">4V</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="max-voltage">Tensão Máxima (V):</label>
+                    <select id="max-voltage" class="form-control">
+                        <option value="6">6V</option>
+                        <option value="9">9V</option>
+                        <option value="12">12V</option>
+                        <option value="24">24V</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="configure-btn">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cloud Save Modal -->
+    <div class="modal-backdrop" id="cloudModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Configuração de Salvamento na Nuvem</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="form-group">
+                    <label for="sync-interval">Frequência de Sincronização:</label>
+                    <select id="sync-interval" class="form-control">
+                        <option value="real">Tempo Real</option>
+                        <option value="5">5 minutos</option>
+                        <option value="15">15 minutos</option>
+                        <option value="30">30 minutos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="storage-limit">Limite de Armazenamento:</label>
+                    <select id="storage-limit" class="form-control">
+                        <option value="1">1GB</option>
+                        <option value="5">5GB</option>
+                        <option value="10">10GB</option>
+                        <option value="unlimited">Ilimitado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="configure-btn">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Port Configuration Modal -->
+    <div class="modal-backdrop" id="portModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Configuração da Porta Serial</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="form-group">
+                    <label for="port-select">Selecione a Porta:</label>
+                    <select id="port-select" class="form-control">
+                        <option value="">Selecionar porta...</option>
+                        <option value="COM1">COM1</option>
+                        <option value="COM2">COM2</option>
+                        <option value="COM3">COM3</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="baud-rate">Baud Rate:</label>
+                    <select id="baud-rate" class="form-control">
+                        <option value="9600">9600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="button-group">
+                    <button class="configure-btn connect-btn">Conectar</button>
+                    <button class="configure-btn save-btn small">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get all modal elements
+        const modals = {
+            autoSave: document.getElementById('autoSaveModal'),
+            notifications: document.getElementById('notificationsModal'),
+            cloud: document.getElementById('cloudModal'),
+            port: document.getElementById('portModal')
+        };
+
+        // Get all close buttons
+        const closeButtons = document.querySelectorAll('.modal-close');
+
+        // Get all configure buttons from the settings cards
+        const configureButtons = document.querySelectorAll('.configure-btn');
+
+        // Function to open specific modal
+        function openModal(modalId) {
+            modals[modalId].classList.add('active');
+        }
+
+        // Function to close all modals
+        function closeModal() {
+            Object.values(modals).forEach(modal => {
+                modal.classList.remove('active');
+            });
+        }
+
+        // Add click handlers to configure buttons
+        configureButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const modalType = e.target.closest('.settings-card')?.dataset.modalType;
+                if (modalType && modals[modalType]) {
+                    openModal(modalType);
+                }
+            });
+        });
+
+        // Close modal when clicking close button
+        closeButtons.forEach(button => {
+            button.addEventListener('click', closeModal);
+        });
+
+        // Close modal when clicking outside
+        Object.values(modals).forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        });
+
+        // Add settings toggle handlers
+        const toggles = document.querySelectorAll('.toggle input[type="checkbox"]');
+        toggles.forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const settingCard = this.closest('.settings-card');
+                const settingType = settingCard.dataset.modalType;
+                const settingName = settingCard.querySelector('h2').textContent;
+                
+                // Save setting state to Firebase
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    db.collection('users').doc(user.uid).update({
+                        [`settings.${settingType}`]: this.checked
+                    }).then(() => {
+                        showToast(`${settingName} ${this.checked ? 'ativado' : 'desativado'} com sucesso`, 'success');
+                    }).catch(error => {
+                        console.error("Error saving setting:", error);
+                        this.checked = !this.checked; // Revert toggle if save fails
+                        showToast(`Erro ao ${this.checked ? 'ativar' : 'desativar'} ${settingName}. Tente novamente.`, 'error');
+                    });
+                }
+            });
+        });
+
+        // Load user settings on page load
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                db.collection('users').doc(user.uid).get().then((doc) => {
+                    if (doc.exists && doc.data().settings) {
+                        const settings = doc.data().settings;
+                        // Update toggle states
+                        Object.keys(settings).forEach(settingType => {
+                            const toggle = document.querySelector(`.settings-card[data-modal-type="${settingType}"] input[type="checkbox"]`);
+                            if (toggle) {
+                                toggle.checked = settings[settingType];
+                            }
+                        });
+                    }
+                });
+            } else {
+                showAuthPopup();
+            }
+        });
+
+        // Add port configuration handlers
+        const portModal = document.getElementById('portModal');
+        const portSelect = document.getElementById('port-select');
+        const baudSelect = document.getElementById('baud-rate');
+        const connectBtn = portModal.querySelector('.connect-btn');
+        const saveBtn = portModal.querySelector('.save-btn');
+
+        // Save port configuration to Firebase
+        saveBtn.addEventListener('click', () => {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                const portConfig = {
+                    port: portSelect.value,
+                    baudRate: baudSelect.value
+                };
+
+                db.collection('users').doc(user.uid).update({
+                    'settings.arduino': portConfig
+                }).then(() => {
+                    showToast(`Configurações do Arduino salvas com sucesso (Porta: ${portConfig.port}, Baud Rate: ${portConfig.baudRate})`, 'success');
+                    closeModal();
+                }).catch(error => {
+                    console.error("Error saving port config:", error);
+                    showToast('Erro ao salvar configurações do Arduino. Tente novamente.', 'error');
+                });
+            }
+        });
+
+        // Load saved port configuration when modal opens
+        function loadPortConfig() {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).get().then((doc) => {
+                    if (doc.exists && doc.data().settings?.arduino) {
+                        const config = doc.data().settings.arduino;
+                        portSelect.value = config.port || '';
+                        baudSelect.value = config.baudRate || '9600';
+                    }
+                }).catch(error => {
+                    console.error("Error loading port config:", error);
+                });
+            }
+        }
+
+        // Add event listener to load config when modal opens
+        document.querySelector('[data-modal-type="port"] .configure-btn').addEventListener('click', loadPortConfig);
+
+        // Add this function to your existing script
+        function saveInterval() {
+            const interval = document.getElementById('save-interval').value;
+            const user = firebase.auth().currentUser;
+            
+            if (user) {
+                db.collection('users').doc(user.uid).update({
+                    'settings.autoSaveInterval': parseInt(interval)
+                }).then(() => {
+                    showToast(`Intervalo de salvamento automático definido para ${interval} segundo${interval > 1 ? 's' : ''}`, 'success');
+                    closeModal();
+                }).catch(error => {
+                    console.error("Error saving interval:", error);
+                    showToast('Erro ao salvar intervalo de salvamento automático. Tente novamente.', 'error');
+                });
+            }
+        }
+
+        // Add this to load saved interval when modal opens
+        document.querySelector('[data-modal-type="autoSave"]').addEventListener('click', () => {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).get().then((doc) => {
+                    if (doc.exists && doc.data().settings?.autoSaveInterval) {
+                        document.getElementById('save-interval').value = doc.data().settings.autoSaveInterval;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

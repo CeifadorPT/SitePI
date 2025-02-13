@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alunos - TGPSI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="#" class="active">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <section class="students-section">
+            <h1 class="section-title">Nossa Equipa</h1>
+            <div class="students-grid">
+                <div class="student-card">
+                    <div class="student-number">Nº 6</div>
+                    <div class="student-info">
+                        <h2>David Peres</h2>
+                        <p>Desenvolvimento Full-Stack</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-github"></i></a>
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="student-card">
+                    <div class="student-number">Nº 8</div>
+                    <div class="student-info">
+                        <h2>Diogo Cercas</h2>
+                        <p>Desenvolvimento Frontend</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-github"></i></a>
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="student-card">
+                    <div class="student-number">Nº 16</div>
+                    <div class="student-info">
+                        <h2>Kaua Frederico</h2>
+                        <p>Desenvolvimento Backend</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-github"></i></a>
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="student-card">
+                    <div class="student-number">Nº 26</div>
+                    <div class="student-info">
+                        <h2>Tiago Dias</h2>
+                        <p>Design UI/UX</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-github"></i></a>
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="student-card">
+                    <div class="student-number">Nº 28</div>
+                    <div class="student-info">
+                        <h2>Tiago Duarte</h2>
+                        <p>Desenvolvimento Arduino</p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-github"></i></a>
+                            <a href="#"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div id="container">
+            <div class="square"></div>
+            <div class="square"></div>
+            <div class="square"></div>
+            <div class="square"></div>
+        </div>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script>
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Function to check authentication
+        function checkAuth(e) {
+            if (!auth.currentUser) {
+                e.preventDefault();
+                alert('Por favor, faça login para acessar esta página.');
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Add click handler to dashboard links
+        document.querySelectorAll('a[href="dashboard.html"]').forEach(link => {
+            link.addEventListener('click', checkAuth);
+        });
+    </script>
+</body>
+</html> 

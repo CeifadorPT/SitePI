@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planos - Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html" class="active">PLANOS</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <section class="plans-section">
+            <h1 class="section-title">Escolha seu plano</h1>
+            <p class="section-subtitle">Desbloqueie possibilidades ilimitadas</p>
+            
+            <div class="plans-grid">
+                <!-- Basic Plan -->
+                <div class="plan-card">
+                    <div class="plan-header">
+                        <h2>Basic</h2>
+                        <p>Para uso pessoal e exploração da tecnologia</p>
+                        <div class="plan-price">
+                            <span class="currency">€</span>
+                            <span class="amount">0</span>
+                            <span class="period">mês</span>
+                        </div>
+                    </div>
+                    <div class="plan-features">
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>200 leituras por dia</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Acesso a recursos básicos</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>API limitada</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Até 200MB de dados na nuvem</span>
+                        </div>
+                    </div>
+                    <button class="plan-button">Começar Grátis</button>
+                </div>
+
+                <!-- Premium Plan -->
+                <div class="plan-card featured">
+                    <div class="plan-badge">Popular</div>
+                    <div class="plan-header">
+                        <h2>Premium</h2>
+                        <p>Perfeito para profissionais e pequenas empresas</p>
+                        <div class="plan-price">
+                            <span class="currency">€</span>
+                            <span class="amount">9.99</span>
+                            <span class="period">mês</span>
+                        </div>
+                    </div>
+                    <div class="plan-features">
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Leituras ilimitadas</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Acesso total aos recursos</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Suporte prioritário</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Até 2GB de dados na nuvem</span>
+                        </div>
+                    </div>
+                    <button class="plan-button featured">Começar Agora</button>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="plan-card">
+                    <div class="plan-badge">Melhor</div>
+                    <div class="plan-header">
+                        <h2>Enterprise</h2>
+                        <p>Para grandes empresas de suporte especializado</p>
+                        <div class="plan-price">
+                            <span class="currency">€</span>
+                            <span class="amount">19.99</span>
+                            <span class="period">mês</span>
+                        </div>
+                    </div>
+                    <div class="plan-features">
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Implementação AI personalizada</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Dados de uso detalhados</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>API ilimitada</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Dados ilimitados na nuvem</span>
+                        </div>
+                    </div>
+                    <button class="plan-button">Começar Agora</button>
+                </div>
+            </div>
+        </section>
+        <div id="container">
+            <div class="square"></div>
+            <div class="square"></div>
+            <div class="square"></div>
+            <div class="square"></div>
+        </div>
+    </main>
+
+    <!-- Add at the end of body before closing tag -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Add visual feedback for plan selection
+        function updatePlanButtons(currentPlan) {
+            document.querySelectorAll('.plan-card').forEach(card => {
+                const planTitle = card.querySelector('h2').textContent.toLowerCase();
+                const button = card.querySelector('.plan-button');
+                
+                if (planTitle === currentPlan) {
+                    button.textContent = 'Plano Atual';
+                    button.disabled = true;
+                    button.classList.add('current-plan-btn');
+                } else if (planTitle === 'basic') {
+                    button.textContent = 'Começar Grátis';
+                    button.classList.add('free-plan');
+                } else {
+                    button.textContent = 'Comprar Agora';
+                }
+            });
+        }
+
+        // Replace the simple auth check
+        auth.onAuthStateChanged(function(user) {
+            if (!user) {
+                showAuthPopup();
+            }
+        });
+
+        // Add this function
+        function showAuthPopup() {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2>Acesso Restrito</h2>
+                    <p>Por favor, faça login para acessar esta página.</p>
+                    <button onclick="window.location.href='index.html'" class="auth-popup-button">OK</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        // Add debug mode functionality
+        let debugMode = false;
+        let konami = [];
+        const debugSequence = ['d','e','b','u','g']; // Type 'debug' to enable debug mode
+
+        document.addEventListener('keydown', (e) => {
+            konami.push(e.key.toLowerCase());
+            konami = konami.slice(-5); // Keep only last 5 keys
+
+            if (konami.join('') === debugSequence.join('')) {
+                debugMode = !debugMode;
+                alert(debugMode ? '🐛 Modo debug ativado!' : '🚫 Modo debug desativado!');
+                updateDebugUI();
+            }
+        });
+
+        function updateDebugUI() {
+            document.querySelectorAll('.plan-card').forEach(card => {
+                const planTitle = card.querySelector('h2').textContent.toLowerCase();
+                const button = card.querySelector('.plan-button');
+                
+                if (debugMode) {
+                    // In debug mode, all plans are free
+                    if (!button.textContent.includes('[DEBUG]')) {
+                        button.textContent = button.textContent + ' [DEBUG]';
+                    }
+                    button.classList.add('debug-mode');
+                } else {
+                    // Normal mode
+                    button.textContent = button.textContent.replace(' [DEBUG]', '');
+                    button.classList.remove('debug-mode');
+                }
+            });
+        }
+
+        // Handle plan selection
+        document.querySelectorAll('.plan-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const planCard = e.target.closest('.plan-card');
+                const selectedPlan = planCard.querySelector('h2').textContent.toLowerCase();
+                const user = auth.currentUser;
+                
+                if (user) {
+                    if (selectedPlan === 'basic' || debugMode) {
+                        // Basic plan or debug mode - update directly
+                        updateUserPlan(user.uid, selectedPlan);
+                    } else {
+                        // For premium and enterprise plans, show payment confirmation
+                        if (confirm('Este plano requer pagamento. Deseja prosseguir com a compra?')) {
+                            // Here you would normally integrate with a payment processor
+                            alert('Funcionalidade de pagamento em desenvolvimento.');
+                            return;
+                        }
+                    }
+                }
+            });
+        });
+
+        // Function to update user plan
+        function updateUserPlan(userId, planName) {
+            // First check if user document exists
+            db.collection('users').doc(userId).get()
+                .then((doc) => {
+                    if (!doc.exists) {
+                        // Create user document if it doesn't exist
+                        const user = auth.currentUser;
+                        return db.collection('users').doc(userId).set({
+                            name: user.displayName || 'Usuário',
+                            email: user.email,
+                            plan: planName,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            readings: [],
+                            lastReading: null,
+                            totalConsumption: 0,
+                            estimatedCost: 0
+                        });
+                    } else {
+                        // Update existing document
+                        return db.collection('users').doc(userId).update({
+                            plan: planName,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                })
+                .then(() => {
+                    alert('Plano atualizado com sucesso!');
+                    window.location.href = 'dashboard.html';
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('Erro ao atualizar plano: ' + error.message);
+                });
+        }
+    </script>
+
+    <style>
+        .current-plan {
+            border: 2px solid #4CAF50;
+            transform: scale(1.02);
+        }
+
+        .free-plan {
+            background: linear-gradient(45deg, #4CAF50, #45a049) !important;
+        }
+
+        .free-plan:hover {
+            background: linear-gradient(45deg, #45a049, #3d8b40) !important;
+        }
+
+        .plan-button {
+            transition: all 0.3s ease;
+        }
+
+        .plan-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .plan-card {
+            transition: all 0.3s ease;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .current-plan::after {
+            content: '✓ Plano Atual';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+        }
+
+        .current-plan-btn {
+            background: #666 !important;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .current-plan-btn:hover {
+            transform: none !important;
+        }
+
+        /* Update free-plan style to not use !important when possible */
+        .plan-button.free-plan {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .plan-button.free-plan:hover {
+            background: linear-gradient(45deg, #45a049, #3d8b40);
+        }
+
+        .debug-mode {
+            background: linear-gradient(45deg, #ff8c00, #ff5722) !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .debug-mode:hover {
+            background: linear-gradient(45deg, #ff5722, #ff8c00) !important;
+        }
+
+        .debug-mode::before {
+            content: '🐛';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+        }
+
+        .auth-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .auth-popup {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+
+        .auth-popup-icon {
+            font-size: 2.5rem;
+            color: #ff4444;
+            margin-bottom: 1rem;
+            margin-right: -30px;
+        }
+
+        .auth-popup h2 {
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .auth-popup p {
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-popup-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup-button:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</body>
+</html> 

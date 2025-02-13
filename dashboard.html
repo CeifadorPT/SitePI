@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - TGPSI</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                    <li><a href="ranking.html">RANKING</a></li>
+                    <li><a href="achievements.html">CONQUISTAS</a></li>
+                    <li id="adminNavItem" style="display: none;"><a href="cfadmin.html">ADMIN</a></li>
+                </ul>
+            </div>
+            <div class="search-icon" onclick="toggleNotifications()">
+                <i class="fas fa-bell"></i>
+                <span class="notification-count">0</span>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <section class="dashboard-section">
+            <div class="dashboard-header">
+                <h1>Dashboard</h1>
+                <div class="date-filter">
+                    <button class="time-btn active">Hoje</button>
+                    <button class="time-btn">Semana</button>
+                    <button class="time-btn">Mês</button>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <!-- User Profile Card - Add this first -->
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-picture-container">
+                            <img id="profilePicture" src="https://ui-avatars.com/api/?name=User&background=random" alt="Profile Picture">
+                            <div class="profile-picture-overlay">
+                                <button class="change-picture-btn" onclick="openAvatarModal()">
+                                    <i class="fas fa-camera"></i>
+                                    Mudar Avatar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name-container">
+                                <h3 id="profileName">Carregando...</h3>
+                                <button onclick="editName()" class="edit-name-btn">
+                                    <i class="fas fa-pencil"></i>
+                                </button>
+                            </div>
+                            <p id="profileEmail">Carregando...</p>
+                            <div class="profile-plan">
+                                <i class="fas fa-crown"></i>
+                                <span id="profilePlan">Carregando...</span>
+                            </div>
+                        </div>
+                        <div class="profile-actions">
+                            <button class="profile-btn change-password" onclick="changePassword()">
+                                <i class="fas fa-key"></i>
+                                Mudar Senha
+                            </button>
+                            <button class="profile-btn logout" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Sair
+                            </button>
+                        </div>
+                    </div>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-clock"></i>
+                            <div class="stat-details">
+                                <span class="stat-label">Membro desde</span>
+                                <span id="memberSince" class="stat-value">Carregando...</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-chart-line"></i>
+                            <div class="stat-details">
+                                <span class="stat-label">Total de leituras</span>
+                                <span id="totalReadings" class="stat-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="stats-info">
+                        <h3>Consumo Total</h3>
+                        <p class="stats-value">Carregando...</p>
+                        <span class="stats-trend positive">
+                            <i class="fas fa-arrow-up"></i> 12%
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-euro-sign"></i>
+                    </div>
+                    <div class="stats-info">
+                        <h3>Custo Estimado</h3>
+                        <p class="stats-value">Carregando...</p>
+                        <span class="stats-trend negative">
+                            <i class="fas fa-arrow-down"></i> 8%
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <div class="stats-info">
+                        <h3>Economia Verde</h3>
+                        <p class="stats-value">Carregando...</p>
+                        <span class="stats-trend positive">
+                            <i class="fas fa-arrow-up"></i> 23%
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Usage Graph -->
+                <div class="graph-card wide">
+                    <div class="card-header">
+                        <h3>Consumo de Energia</h3>
+                        <div class="card-actions">
+                            <button class="action-btn">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button onclick="window.location.href='readings.html'" class="action-btn">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="usageGraph"></canvas>
+                    </div>
+                </div>
+
+                <!-- Add this before the activities section -->
+                <div class="tips-section">
+                    <div class="tips-header">
+                        <h3>Dicas de Consumo</h3>
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div id="powerTips" class="tips-content">
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                            <div class="tip-text">
+                                Carregando dicas de consumo...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activities section follows -->
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <h3>Atividade Recente</h3>
+                        <div class="activity-pagination">
+                            <button class="pagination-btn" onclick="previousActivityPage()">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="page-info">Página <span id="currentPage">1</span></span>
+                            <button class="pagination-btn" onclick="nextActivityPage()">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="activity-list"></div>
+                </div>
+
+                <!-- Notifications Card -->
+                <div id="notificationsList" class="notifications-list">
+                    <!-- Notifications will be populated here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Add this modal HTML after the main content -->
+    <div id="avatarModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Mudar Avatar</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="option-group">
+                    <div class="option">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="generateAvatar" name="avatarType" checked>
+                            <label for="generateAvatar">
+                                <span class="checkbox-custom"></span>
+                                Gerar avatar do nome
+                            </label>
+                        </div>
+                        <div class="input-group" id="nameInput">
+                            <input type="text" id="userName" placeholder="Digite seu nome">
+                            <div class="preview">
+                                <img id="generatedPreview" src="https://ui-avatars.com/api/?name=Preview&background=random" alt="Preview">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="option">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="useUrl" name="avatarType">
+                            <label for="useUrl">
+                                <span class="checkbox-custom"></span>
+                                Usar URL da imagem
+                            </label>
+                        </div>
+                        <div class="input-group" id="urlInput">
+                            <input type="text" id="imageUrl" placeholder="Cole a URL da imagem" disabled>
+                            <div class="preview">
+                                <img id="urlPreview" src="https://ui-avatars.com/api/?name=URL&background=random" alt="Preview">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveAvatar" class="save-btn">Salvar Avatar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this right after the body tag opens -->
+    <div id="notification" class="notification-overlay">
+        <div class="notification-content">
+            <div class="notification-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="notification-text">
+                <h3 id="notificationTitle"></h3>
+                <p id="notificationMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Tips section styling with dynamic colors */
+        .tips-section {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(105, 105, 105, 0.247);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 0;
+            grid-column: 1 / -1;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            order: 3; /* Place after stats cards but before activities */
+        }
+
+        .tips-section.good {
+            background: rgba(76, 175, 80, 0.1);
+            border-color: rgba(76, 175, 80, 0.2);
+        }
+
+        .tips-section.medium {
+            background: rgba(255, 152, 0, 0.1);
+            border-color: rgba(255, 152, 0, 0.2);
+        }
+
+        .tips-section.bad {
+            background: rgba(244, 67, 54, 0.1);
+            border-color: rgba(244, 67, 54, 0.2);
+        }
+
+        .tips-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .tips-header h3 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .tips-header i {
+            color: #ffd700;
+            font-size: 1.4rem;
+        }
+
+        .tips-content {
+            color: #fff;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tip-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .tip-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tip-icon i {
+            font-size: 0.9rem;
+        }
+
+        .tip-icon.good {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .tip-icon.warning {
+            background: rgba(255, 152, 0, 0.2);
+            color: #FFC107;
+        }
+
+        .tip-text {
+            flex-grow: 1;
+        }
+
+        /* Update grid order */
+        .activity-card {
+            order: 4; /* Place after tips section */
+        }
+
+        /* Add loading state styles */
+        .tip-icon .fa-spin {
+            color: #888;
+        }
+    </style>
+
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const storage = firebase.storage();
+
+        // Initialize usage graph
+        const usageCtx = document.getElementById('usageGraph').getContext('2d');
+        const usageGraph = new Chart(usageCtx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                datasets: [{
+                    label: 'Consumo (kWh)',
+                    data: Array.from({length: 24}, () => Math.random() * 2 + 1),
+                    borderColor: 'rgba(76, 175, 80, 0.8)',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#888'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#888',
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 12
+                        }
+                    }
+                }
+            }
+        });
+
+        // Update the auth.onAuthStateChanged handler
+        auth.onAuthStateChanged(async function(user) {
+            if (user) {
+                // Set 'Hoje' button as active
+                document.querySelectorAll('.date-filter .time-btn').forEach(btn => {
+                    if (btn.textContent.trim() === 'Hoje') {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                // Update dashboard with today's data
+                updateDashboardStats('Hoje');
+
+                // Update activity list when dashboard loads
+                updateActivityList();
+
+                // Listen for real-time updates
+                db.collection('users').doc(user.uid)
+                    .onSnapshot(doc => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            
+                            // Update profile info with proper spacing
+                            document.getElementById('profileName').innerHTML = `
+                                ${data.isDev ? '<span class="dev-icon-wrapper"><i class="fas fa-hammer dev-icon"></i></span>' : ''}
+                                ${data.name || 'Usuário'}
+                                ${data.isGay ? '<span class="lgbt-badge" title="LGBT+"><i class="fas fa-heart" style="padding-right: 0;"></i></span>' : ''}
+                            `.trim();
+                            document.getElementById('profileEmail').textContent = data.email;
+                            document.getElementById('profilePlan').textContent = data.plan?.toUpperCase() || 'BASIC';
+                            document.getElementById('totalReadings').textContent = data.readings?.length || 0;
+
+                            // Update dashboard stats and graph
+                            const activeTimeBtn = document.querySelector('.date-filter .time-btn.active');
+                            if (activeTimeBtn) {
+                                updateDashboardStats(activeTimeBtn.textContent.trim());
+                            }
+
+                            // Update activity list when data changes
+                            updateActivityList();
+
+                            // Show admin link if user is admin
+                            document.getElementById('adminNavItem').style.display = data.isDev ? 'block' : 'none';
+                        }
+                    });
+
+                updateNotifications();
+            } else {
+                showAuthPopup();
+            }
+        });
+
+        // Add blur effect to header on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const header = document.querySelector('header');
+            header.classList.add('scrolled');
+        });
+
+        // Replace the simple auth check with this
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (!user) {
+                showAuthPopup();
+            }
+        });
+
+        // Add this function
+        function showAuthPopup() {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2>Acesso Restrito</h2>
+                    <p>Por favor, faça login para acessar esta página.</p>
+                    <button onclick="window.location.href='index.html'" class="auth-popup-button">OK</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        // Cache helper functions
+        const imageCache = {
+            async get(key) {
+                try {
+                    const cache = await caches.open('profile-images');
+                    const response = await cache.match(key);
+                    return response ? response.blob() : null;
+                } catch (e) {
+                    console.error('Cache get error:', e);
+                    return null;
+                }
+            },
+            
+            async set(key, blob) {
+                try {
+                    const cache = await caches.open('profile-images');
+                    const response = new Response(blob);
+                    await cache.put(key, response);
+                } catch (e) {
+                    console.error('Cache set error:', e);
+                }
+            }
+        };
+
+        // Function to load and cache profile picture
+        async function loadProfilePicture(url, imgElement) {
+            if (!url) {
+                imgElement.src = 'https://ui-avatars.com/api/?name=User&background=random';
+                return;
+            }
+
+            // Try to get from cache first
+            const cachedImage = await imageCache.get(url);
+            if (cachedImage) {
+                imgElement.src = URL.createObjectURL(cachedImage);
+                return;
+            }
+
+            // If not in cache, fetch and cache
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                await imageCache.set(url, blob);
+                imgElement.src = URL.createObjectURL(blob);
+            } catch (error) {
+                console.error('Error loading image:', error);
+                // If fetch fails, generate avatar from user's name
+                const userData = await db.collection('users').doc(auth.currentUser.uid).get();
+                const name = userData.data()?.name || 'User';
+                imgElement.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+            }
+        }
+
+        // Update the auth state change handler
+        auth.onAuthStateChanged(async function(user) {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const docRef = db.collection('users').doc(user.uid);
+            
+            // Initial load
+            const doc = await docRef.get();
+            if (doc.exists) {
+                const data = doc.data();
+                await loadProfilePicture(data.profilePicture, profilePicture);
+                
+                // Update profile info
+                document.getElementById('profileName').innerHTML = `
+                    ${data.isDev ? '<span class="dev-icon-wrapper"><i class="fas fa-hammer dev-icon"></i></span>' : ''}
+                    ${data.name || 'Usuário'}
+                    ${data.isGay ? '<span class="lgbt-badge" title="LGBT+"><i class="fas fa-heart" style="padding-right: 0;"></i></span>' : ''}
+                `;
+                document.getElementById('profileEmail').textContent = data.email;
+                document.getElementById('profilePlan').textContent = data.plan.toUpperCase();
+                
+                // Format and display member since date
+                const memberDate = data.createdAt?.toDate();
+                document.getElementById('memberSince').textContent = memberDate ? 
+                    memberDate.toLocaleDateString('pt-BR', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    }) : 'N/A';
+                
+                // Update total readings
+                document.getElementById('totalReadings').textContent = 
+                    data.readings?.length || 0;
+                
+                // Update other stats...
+            }
+        });
+
+        // Profile picture handling
+        const profilePicture = document.getElementById('profilePicture');
+
+        // Add this to your existing script section
+        const modal = document.getElementById('avatarModal');
+        const generateCheck = document.getElementById('generateAvatar');
+        const urlCheck = document.getElementById('useUrl');
+        const nameInput = document.getElementById('userName');
+        const urlInput = document.getElementById('imageUrl');
+        const generatedPreview = document.getElementById('generatedPreview');
+        const urlPreview = document.getElementById('urlPreview');
+
+        function openAvatarModal() {
+            modal.style.display = 'block';
+        }
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Handle checkbox toggles
+        generateCheck.addEventListener('change', () => {
+            if (generateCheck.checked) {
+                urlCheck.checked = false;
+                nameInput.disabled = false;
+                urlInput.disabled = true;
+            }
+        });
+
+        urlCheck.addEventListener('change', () => {
+            if (urlCheck.checked) {
+                generateCheck.checked = false;
+                nameInput.disabled = true;
+                urlInput.disabled = false;
+            }
+        });
+
+        // Live preview for name input
+        nameInput.addEventListener('input', () => {
+            const name = nameInput.value || 'Preview';
+            generatedPreview.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=200`;
+        });
+
+        // Update the URL preview handler
+        urlInput.addEventListener('input', () => {
+            const url = urlInput.value;
+            if (url) {
+                let imageUrl = url;
+                
+                // Convert Imgur URLs to direct image URLs if needed
+                if (url.includes('imgur.com')) {
+                    // Handle direct i.imgur.com URLs first
+                    if (url.includes('i.imgur.com')) {
+                        imageUrl = url;
+                    } else {
+                        // Handle album URLs
+                        if (url.includes('/a/')) {
+                            const albumId = url.match(/imgur\.com\/a\/([a-zA-Z0-9]+)/);
+                            if (albumId && albumId[1]) {
+                                imageUrl = `https://i.imgur.com/${albumId[1]}.jpg`;
+                            }
+                        } else {
+                            // Handle single image URLs
+                            const imgurId = url.match(/imgur\.com\/(?:gallery\/|a\/)?([a-zA-Z0-9]+)/);
+                            if (imgurId && imgurId[1]) {
+                                imageUrl = `https://i.imgur.com/${imgurId[1]}.jpg`;
+                            }
+                        }
+                    }
+                    // Add CORS proxy for Imgur URLs
+                    imageUrl = `https://cors-anywhere.herokuapp.com/${imageUrl}`;
+                }
+
+                // Handle URLs starting with @
+                if (url.startsWith('@')) {
+                    const cleanUrl = url.substring(1);
+                    if (cleanUrl.includes('imgur.com')) {
+                        if (cleanUrl.includes('i.imgur.com')) {
+                            imageUrl = `https://cors-anywhere.herokuapp.com/${cleanUrl}`;
+                        } else {
+                            const imgurId = cleanUrl.match(/imgur\.com\/(?:gallery\/|a\/)?([a-zA-Z0-9]+)/);
+                            if (imgurId && imgurId[1]) {
+                                imageUrl = `https://cors-anywhere.herokuapp.com/https://i.imgur.com/${imgurId[1]}.jpg`;
+                            }
+                        }
+                    } else {
+                        imageUrl = cleanUrl;
+                    }
+                }
+
+                // Add headers to prevent CORS issues
+                fetch(imageUrl, {
+                    headers: {
+                        'Origin': window.location.origin
+                    }
+                })
+                .then(response => response.blob())
+                .then(blob => {
+                    const objectURL = URL.createObjectURL(blob);
+                    urlPreview.src = objectURL;
+                })
+                .catch(() => {
+                    // If fetch fails, try without CORS proxy
+                    urlPreview.src = imageUrl.replace('https://cors-anywhere.herokuapp.com/', '');
+                    urlPreview.onerror = () => {
+                        alert('URL inválida ou imagem não acessível. Certifique-se de que a URL é uma imagem direta.');
+                        urlPreview.src = 'https://ui-avatars.com/api/?name=URL&background=random';
+                    };
+                });
+            }
+        });
+
+        // Update the save button handler
+        document.getElementById('saveAvatar').addEventListener('click', () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            let avatarUrl;
+            let name = nameInput.value;
+
+            if (generateCheck.checked) {
+                if (!name) {
+                    alert('Por favor, digite um nome.');
+                    return;
+                }
+                avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=200`;
+                updateProfile(avatarUrl, name);
+            } else if (urlCheck.checked) {
+                avatarUrl = urlInput.value;
+                if (!avatarUrl) {
+                    alert('Por favor, insira uma URL válida.');
+                    return;
+                }
+
+                // Process Imgur URL
+                if (avatarUrl.includes('imgur.com')) {
+                    if (avatarUrl.includes('i.imgur.com')) {
+                        avatarUrl = avatarUrl;
+                    } else {
+                        const imgurId = avatarUrl.match(/imgur\.com\/(?:gallery\/|a\/)?([a-zA-Z0-9]+)/);
+                        if (imgurId && imgurId[1]) {
+                            avatarUrl = `https://i.imgur.com/${imgurId[1]}.jpg`;
+                        }
+                    }
+                }
+
+                // Store the direct URL without CORS proxy
+                updateProfile(avatarUrl, name);
+            }
+        });
+
+        function updateProfile(avatarUrl, name) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).update({
+                profilePicture: avatarUrl,
+                name: name || user.displayName,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(async () => {
+                // Cache the new avatar immediately
+                if (avatarUrl) {
+                    try {
+                        const response = await fetch(avatarUrl);
+                        const blob = await response.blob();
+                        await imageCache.set(avatarUrl, blob);
+                        profilePicture.src = URL.createObjectURL(blob);
+                    } catch (error) {
+                        console.error('Error caching new avatar:', error);
+                        profilePicture.src = avatarUrl;
+                    }
+                }
+                modal.style.display = 'none';
+                alert('Avatar atualizado com sucesso!');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Erro ao atualizar avatar: ' + error.message);
+            });
+        }
+
+        // Add these functions to your existing script
+        function showNotification(title, message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationTitle = document.getElementById('notificationTitle');
+            const notificationMessage = document.getElementById('notificationMessage');
+            const icon = notification.querySelector('.notification-icon i');
+            
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            
+            // Update icon based on type
+            icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            notification.className = `notification-overlay ${type}`;
+            
+            notification.style.display = 'flex';
+            
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                    notification.style.opacity = '1';
+                }, 300);
+            }, 3000);
+        }
+
+        function logout() {
+            // Log the logout activity first
+            logUserActivity('logout')
+                .then(() => {
+                    return auth.signOut();
+                })
+                .then(() => {
+                    showNotification(
+                        'Sessão Encerrada',
+                        'Você foi desconectado com sucesso.',
+                        'success'
+                    );
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                })
+                .catch((error) => {
+                    showNotification(
+                        'Erro',
+                        'Erro ao sair: ' + error.message,
+                        'error'
+                    );
+                });
+        }
+
+        // Add this function to handle password change request
+        function changePassword() {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <h2>Alterar Palavra-passe</h2>
+                    <p>Será enviado um email com instruções para alterar sua palavra-passe.</p>
+                    <button onclick="sendPasswordReset()" class="auth-popup-button">Enviar Email</button>
+                    <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button" style="background: #666; margin-top: 10px;">Cancelar</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        // Update the sendPasswordReset function
+        function sendPasswordReset() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            // Remove existing popup first
+            const existingPopup = document.querySelector('.auth-popup-overlay');
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+
+            firebase.auth().sendPasswordResetEmail(user.email)
+                .then(() => {
+                    // Log the password reset request
+                    return logUserActivity('password_reset');
+                })
+                .then(() => {
+                    // Show success message in new popup
+                    const successPopup = document.createElement('div');
+                    successPopup.className = 'auth-popup-overlay';
+                    successPopup.innerHTML = `
+                        <div class="auth-popup">
+                            <div class="auth-popup-icon">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <h2>Email Enviado</h2>
+                            <p>Verifique sua caixa de entrada para alterar a palavra-passe.</p>
+                            <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button">OK</button>
+                        </div>
+                    `;
+                    document.body.appendChild(successPopup);
+                })
+                .catch((error) => {
+                    alert('Erro ao enviar email: ' + error.message);
+                    const existingPopup = document.querySelector('.auth-popup-overlay');
+                    if (existingPopup) {
+                        existingPopup.remove();
+                    }
+                });
+        }
+
+        // Add this function to calculate consumption statistics
+        function updateDashboardStats(timeRange) {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            // Get current date and calculate date range
+            const now = new Date();
+            let startDate;
+            let previousStartDate;
+            
+            switch(timeRange) {
+                case 'Hoje':
+                    startDate = new Date(now.setHours(0, 0, 0, 0));
+                    previousStartDate = new Date(startDate);
+                    previousStartDate.setDate(previousStartDate.getDate() - 1);
+                    break;
+                case 'Semana':
+                    startDate = new Date(now.setDate(now.getDate() - 7));
+                    previousStartDate = new Date(startDate);
+                    previousStartDate.setDate(previousStartDate.getDate() - 7);
+                    break;
+                case 'Mês':
+                    startDate = new Date(now.setMonth(now.getMonth() - 1));
+                    previousStartDate = new Date(startDate);
+                    previousStartDate.setMonth(previousStartDate.getMonth() - 1);
+                    break;
+                default:
+                    startDate = new Date(now.setHours(0, 0, 0, 0));
+                    previousStartDate = new Date(startDate);
+                    previousStartDate.setDate(previousStartDate.getDate() - 1);
+            }
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const readings = data.readings || [];
+                    
+                    // Filter readings by time range
+                    const filteredReadings = readings.filter(r => r.timestamp >= startDate.getTime());
+                    
+                    // Calculate statistics
+                    const totalReadings = filteredReadings.length;
+                    const avgVoltage = filteredReadings.reduce((acc, r) => acc + r.voltage, 0) / totalReadings || 0;
+                    
+                    // Calculate consumption (kWh)
+                    // P = V * I, assuming average current of 5A
+                    const current = 5; // amperes
+                    const hours = totalReadings / 3600; // convert seconds to hours
+                    const consumption = ((avgVoltage * current * hours) / 1000).toFixed(2); // kWh
+                    
+                    // Calculate cost (€)
+                    // Using Portuguese energy rates (approximate)
+                    const ratePerKwh = 0.1529; // €/kWh - average rate
+                    const taxRate = 0.23; // 23% VAT
+                    const baseCost = consumption * ratePerKwh;
+                    const tax = baseCost * taxRate;
+                    const totalCost = (baseCost + tax).toFixed(2);
+                    
+                    // Calculate CO2 savings (kg)
+                    // Average CO2 emissions for Portugal: 0.255 kg CO2/kWh
+                    const standardConsumption = consumption * 1.2; // Assuming 20% more consumption without monitoring
+                    const actualEmissions = consumption * 0.255;
+                    const standardEmissions = standardConsumption * 0.255;
+                    const co2Savings = (standardEmissions - actualEmissions).toFixed(2);
+                    
+                    // Calculate percentage changes
+                    const previousReadings = readings.filter(r => 
+                        r.timestamp >= previousStartDate.getTime() && r.timestamp < startDate.getTime()
+                    );
+                    
+                    const prevAvgVoltage = previousReadings.reduce((acc, r) => acc + r.voltage, 0) / previousReadings.length || 0;
+                    const prevHours = previousReadings.length / 3600;
+                    const previousConsumption = ((prevAvgVoltage * current * prevHours) / 1000).toFixed(2);
+                    
+                    const consumptionChange = previousConsumption > 0 ? 
+                        ((consumption - previousConsumption) / previousConsumption * 100).toFixed(1) : 0;
+                    
+                    // Update stats cards
+                    document.querySelector('.stats-card:nth-child(2) .stats-value').textContent = `${consumption} kWh`;
+                    document.querySelector('.stats-card:nth-child(3) .stats-value').textContent = `€${totalCost}`;
+                    document.querySelector('.stats-card:nth-child(4) .stats-value').textContent = `${co2Savings} kg CO₂`;
+                    
+                    // Update trends with more specific calculations
+                    const trends = document.querySelectorAll('.stats-trend');
+                    trends.forEach((trend, index) => {
+                        let change;
+                        switch(index) {
+                            case 0: // Consumption
+                                change = consumptionChange;
+                                break;
+                            case 1: // Cost
+                                const prevCost = (previousConsumption * ratePerKwh * (1 + taxRate)).toFixed(2);
+                                change = prevCost > 0 ? ((totalCost - prevCost) / prevCost * 100).toFixed(1) : 0;
+                                break;
+                            case 2: // CO2
+                                const prevSavings = ((previousConsumption * 1.2 - previousConsumption) * 0.255).toFixed(2);
+                                change = prevSavings > 0 ? ((co2Savings - prevSavings) / prevSavings * 100).toFixed(1) : 0;
+                                break;
+                        }
+                        
+                        trend.className = `stats-trend ${change >= 0 ? 'positive' : 'negative'}`;
+                        trend.innerHTML = `
+                            <i class="fas fa-arrow-${change >= 0 ? 'up' : 'down'}"></i>
+                            ${Math.abs(change)}%
+                        `;
+                    });
+                    
+                    // Update graph
+                    updateGraph(filteredReadings, timeRange);
+                    updatePowerTips(consumption, previousConsumption);
+                }
+            });
+        }
+
+        // Add this function to update the graph
+        function updateGraph(readings, timeRange) {
+            const labels = [];
+            const data = [];
+            
+            // Create appropriate time intervals based on range
+            switch(timeRange) {
+                case 'Hoje':
+                    // Hourly intervals
+                    for(let i = 0; i < 24; i++) {
+                        labels.push(`${i}:00`);
+                        const hourReadings = readings.filter(r => new Date(r.timestamp).getHours() === i);
+                        const avgVoltage = hourReadings.reduce((acc, r) => acc + r.voltage, 0) / hourReadings.length || 0;
+                        data.push((avgVoltage * 0.001).toFixed(2));
+                    }
+                    break;
+                case 'Semana':
+                    // Daily intervals
+                    for(let i = 6; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - i);
+                        labels.push(date.toLocaleDateString('pt-BR', { weekday: 'short' }));
+                        const dayReadings = readings.filter(r => {
+                            const readingDate = new Date(r.timestamp);
+                            return readingDate.getDate() === date.getDate();
+                        });
+                        const avgVoltage = dayReadings.reduce((acc, r) => acc + r.voltage, 0) / dayReadings.length || 0;
+                        data.push((avgVoltage * 0.001).toFixed(2));
+                    }
+                    break;
+                case 'Mês':
+                    // Weekly intervals
+                    for(let i = 4; i >= 0; i--) {
+                        labels.push(`Semana ${i + 1}`);
+                        const weekReadings = readings.filter(r => {
+                            const readingDate = new Date(r.timestamp);
+                            const weekNum = Math.floor((new Date() - readingDate) / (7 * 24 * 60 * 60 * 1000));
+                            return weekNum === i;
+                        });
+                        const avgVoltage = weekReadings.reduce((acc, r) => acc + r.voltage, 0) / weekReadings.length || 0;
+                        data.push((avgVoltage * 0.001).toFixed(2));
+                    }
+                    break;
+            }
+            
+            // Update graph data
+            usageGraph.data.labels = labels;
+            usageGraph.data.datasets[0].data = data;
+            usageGraph.update();
+        }
+
+        // Add click handlers for time filter buttons
+        document.querySelectorAll('.date-filter .time-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.date-filter .time-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Update stats for selected time range
+                updateDashboardStats(this.textContent.trim());
+            });
+        });
+
+        // Add these variables at the top of your script
+        let currentActivityPage = 1;
+        const activitiesPerPage = 5;
+
+        // Update the updateActivityList function
+        function updateActivityList() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const activities = doc.data().activities || [];
+                    const activityList = document.querySelector('.activity-list');
+                    activityList.innerHTML = '';
+
+                    // Sort activities by timestamp, most recent first
+                    const sortedActivities = activities.sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    // Calculate pagination
+                    const startIndex = (currentActivityPage - 1) * activitiesPerPage;
+                    const endIndex = startIndex + activitiesPerPage;
+                    const totalPages = Math.ceil(sortedActivities.length / activitiesPerPage);
+                    
+                    // Update page info
+                    document.getElementById('currentPage').textContent = currentActivityPage;
+                    
+                    // Enable/disable pagination buttons
+                    const prevBtn = document.querySelector('.pagination-btn:first-child');
+                    const nextBtn = document.querySelector('.pagination-btn:last-child');
+                    prevBtn.disabled = currentActivityPage === 1;
+                    nextBtn.disabled = currentActivityPage >= totalPages;
+
+                    // Display current page's activities
+                    sortedActivities.slice(startIndex, endIndex).forEach(activity => {
+                        const time = new Date(activity.timestamp).toLocaleTimeString();
+                        const date = new Date(activity.timestamp).toLocaleDateString();
+                        
+                        let icon = '';
+                        switch(activity.action) {
+                            case 'login': icon = 'fa-sign-in-alt'; break;
+                            case 'logout': icon = 'fa-sign-out-alt'; break;
+                            case 'password_change': icon = 'fa-key'; break;
+                            case 'password_reset': icon = 'fa-unlock'; break;
+                            case 'account_created': icon = 'fa-user-plus'; break;
+                            default: icon = 'fa-circle-info';
+                        }
+
+                        activityList.innerHTML += `
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas ${icon}"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <p class="activity-text">${getActivityText(activity.action)}</p>
+                                    <span class="activity-time">${time} - ${date}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            });
+        }
+
+        // Add pagination functions
+        function nextActivityPage() {
+            currentActivityPage++;
+            updateActivityList();
+        }
+
+        function previousActivityPage() {
+            if (currentActivityPage > 1) {
+                currentActivityPage--;
+                updateActivityList();
+            }
+        }
+
+        // Update the getActivityText function
+        function getActivityText(action) {
+            switch(action) {
+                case 'login': return 'Iniciou sessão';
+                case 'logout': return 'Terminou sessão';
+                case 'password_change': return 'Alterou a palavra-passe';
+                case 'password_reset': return 'Solicitou alteração de palavra-passe';
+                case 'account_created': return 'Conta criada';
+                default: return action;
+            }
+        }
+
+        // Add click handler for change password button
+        document.querySelector('.change-password').addEventListener('click', changePassword);
+
+        // Add this function to log user activities
+        function logUserActivity(action) {
+            const user = firebase.auth().currentUser;
+            if (!user) return Promise.resolve();
+
+            const activity = {
+                action: action,
+                timestamp: new Date().getTime(), // Use regular timestamp instead of serverTimestamp
+                userId: user.uid,
+                userName: user.displayName || 'Usuário'
+            };
+
+            return db.collection('users').doc(user.uid).update({
+                activities: firebase.firestore.FieldValue.arrayUnion(activity)
+            });
+        }
+
+        // Update the editName function
+        function editName() {
+            const nameElement = document.getElementById('profileName');
+            // Clean up the name by removing HTML tags and trimming spaces
+            const currentName = nameElement.textContent.replace(/\s+/g, ' ').trim();
+            
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-user-edit"></i>
+                    </div>
+                    <h2>Alterar Nome</h2>
+                    <form id="editNameForm" class="auth-popup-form">
+                        <div class="form-group">
+                            <input type="text" 
+                                   id="newName" 
+                                   value="${currentName}" 
+                                   placeholder="Novo nome" 
+                                   maxlength="10" 
+                                   required>
+                            <small class="char-count">0/10</small>
+                        </div>
+                        <button type="submit" class="auth-popup-button">Salvar</button>
+                        <button type="button" onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">Cancelar</button>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(popup);
+
+            // Add character counter
+            const input = popup.querySelector('#newName');
+            const charCount = popup.querySelector('.char-count');
+            charCount.textContent = `${input.value.length}/10`;
+
+            input.addEventListener('input', () => {
+                const length = input.value.length;
+                charCount.textContent = `${length}/10`;
+                
+                // Visual feedback when reaching limit
+                if (length === 10) {
+                    charCount.style.color = '#ff4444';
+                } else {
+                    charCount.style.color = '#888';
+                }
+            });
+
+            document.getElementById('editNameForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newName = document.getElementById('newName').value.trim();
+                
+                if (newName && newName.length <= 10) {
+                    const user = firebase.auth().currentUser;
+                    if (user) {
+                        db.collection('users').doc(user.uid).update({
+                            name: sanitizeHTML(newName)
+                        }).then(() => {
+                            // Update the display with proper formatting
+                            db.collection('users').doc(user.uid).get().then(doc => {
+                                const userData = doc.data();
+                                nameElement.innerHTML = `
+                                    ${userData.isDev ? '<span class="dev-icon-wrapper"><i class="fas fa-hammer dev-icon"></i></span>' : ''}
+                                    ${newName}
+                                    ${userData.isGay ? '<span class="lgbt-badge" title="LGBT+"><i class="fas fa-heart" style="padding-right: 0;"></i></span>' : ''}
+                                `.trim();
+                            });
+                            popup.remove();
+                            showNotification(
+                                'Nome Atualizado',
+                                'Seu nome foi alterado com sucesso.',
+                                'success'
+                            );
+                        }).catch((error) => {
+                            showNotification(
+                                'Erro',
+                                'Erro ao atualizar nome: ' + error.message,
+                                'error'
+                            );
+                        });
+                    }
+                }
+            });
+        }
+
+        const ALLOWED_HTML_TAGS = {
+            'b': [], // bold
+            'strong': [], // bold
+            'i': [], // italic
+        };
+
+        function sanitizeHTML(input) {
+            const doc = new DOMParser().parseFromString(input, 'text/html');
+            const sanitizedContent = [];
+            
+            function processNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    sanitizedContent.push(node.textContent);
+                    return;
+                }
+                
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tag = node.tagName.toLowerCase();
+                    if (ALLOWED_HTML_TAGS.hasOwnProperty(tag)) {
+                        sanitizedContent.push(`<${tag}>`);
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                        sanitizedContent.push(`</${tag}>`);
+                    } else {
+                        // For disallowed tags, just process their children as text
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                    }
+                }
+            }
+            
+            processNode(doc.body);
+            return sanitizedContent.join('');
+        }
+
+        function updateUserProfile(user) {
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const userData = doc.data();
+                const userName = document.getElementById('userName');
+                userName.innerHTML = `${userData.name || 'Usuário'}`;
+            });
+        }
+
+        // Add this right after Firebase initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Firebase auth state listener
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    updateNotifications(); // Start listening for notifications
+                }
+            });
+        });
+
+        // Update the updateNotifications function
+        function updateNotifications() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const notificationsList = document.getElementById('notificationsList');
+            const headerNotificationCount = document.querySelector('.notification-count');
+
+            if (!notificationsList || !headerNotificationCount) {
+                console.error('Notification elements not found');
+                return;
+            }
+
+            // Listen for real-time updates
+            db.collection('users').doc(user.uid).onSnapshot(doc => {
+                if (!doc.exists) return;
+
+                const notifications = doc.data().notifications || [];
+                const unreadNotifications = notifications.filter(n => !n.read);
+                
+                headerNotificationCount.textContent = unreadNotifications.length;
+                
+                // Get only the most recent notification
+                const latestNotification = notifications[notifications.length - 1];
+                
+                if (latestNotification) {
+                    // Format timestamp based on the type of data
+                    const formatTimestamp = (timestamp) => {
+                        if (!timestamp) return 'Data desconhecida';
+                        
+                        // Handle Firestore Timestamp
+                        if (timestamp.seconds) {
+                            return new Date(timestamp.seconds * 1000).toLocaleString('pt-BR');
+                        }
+                        // Handle regular timestamp (number)
+                        if (typeof timestamp === 'number') {
+                            return new Date(timestamp).toLocaleString('pt-BR');
+                        }
+                        // Handle Date object
+                        if (timestamp instanceof Date) {
+                            return timestamp.toLocaleString('pt-BR');
+                        }
+                        return 'Data desconhecida';
+                    };
+
+                    const time = formatTimestamp(latestNotification.createdAt || latestNotification.timestamp);
+                    
+                    let html = '';
+                    if (latestNotification.type === 'share_request') {
+                        html = `
+                            <div class="notification-item ${latestNotification.read ? '' : 'unread'}">
+                                <div class="notification-content">
+                                    <p><strong>${latestNotification.from}</strong> Deseja compartilhar leituras com você.</p>
+                                </div>
+                                <small class="notification-time">${time}</small>
+                                ${latestNotification.status === 'pending' ? `
+                                    <div class="notification-actions">
+                                        <button onclick="handleShareRequest('accept', '${latestNotification.fromId}')" class="notification-btn accept-btn">
+                                            Aceitar
+                                        </button>
+                                        <button onclick="handleShareRequest('reject', '${latestNotification.fromId}')" class="notification-btn reject-btn">
+                                            Rejeitar
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    } else if (latestNotification.type === 'mute') {
+                        const muteEnd = latestNotification.muteEnd === 'permanent' ? 
+                            'permanentemente' : 
+                            formatTimestamp(latestNotification.muteEnd);
+                        
+                        html = `
+                            <div class="notification-item ${latestNotification.read ? '' : 'unread'}">
+                                <div class="notification-content">
+                                    <p class="mute-notification">
+                                        <i class="fas fa-microphone-slash"></i>
+                                        Você foi silenciado até ${muteEnd}
+                                        ${latestNotification.muteReason ? `<br><small>Motivo: ${latestNotification.muteReason}</small>` : ''}
+                                    </p>
+                                </div>
+                                <small class="notification-time">${time}</small>
+                            </div>
+                        `;
+                    }
+                    
+                    notificationsList.innerHTML = html;
+                } else {
+                    notificationsList.innerHTML = '<p class="no-notifications">Nenhuma notificação</p>';
+                }
+            });
+        }
+
+        // Update the toggleNotifications function
+        function toggleNotifications() {
+            const list = document.getElementById('notificationsList');
+            if (list) {
+                list.classList.toggle('show');
+            }
+        }
+
+        // Update the shareReadings function in contador.html
+        function shareReadings() {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup share-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-share-alt"></i>
+                    </div>
+                    <h2>Compartilhar Leituras</h2>
+                    <div class="share-options">
+                        <div class="share-input-group">
+                            <input type="text" id="shareEmail" placeholder="Digite o email do usuário">
+                            <button onclick="addSharedUser()" class="share-btn">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="shared-users-list">
+                            <h3>Usuários com acesso</h3>
+                            <div id="sharedUsersList">
+                                <p class="no-shared">Nenhum usuário compartilhado</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">
+                        Fechar
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+
+            // Load current shared users
+            loadSharedUsers();
+        }
+
+        // Add this function to load shared users
+        function loadSharedUsers() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const sharedUsersList = document.getElementById('sharedUsersList');
+            
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const sharedWith = data.sharedWith || [];
+                    
+                    if (sharedWith.length === 0) {
+                        sharedUsersList.innerHTML = '<p class="no-shared">Nenhum usuário compartilhado</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    sharedWith.forEach(share => {
+                        html += `
+                            <div class="shared-user-item">
+                                <span class="shared-user-email">${share.email}</span>
+                                <button onclick="removeSharedUser('${share.userId}')" class="remove-share-btn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    sharedUsersList.innerHTML = html;
+                }
+            });
+        }
+
+        // Add this function to remove shared users
+        function removeSharedUser(userId) {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).update({
+                sharedWith: firebase.firestore.FieldValue.arrayRemove(
+                    firebase.firestore.FieldValue.arrayUnion({ userId })
+                )
+            }).then(() => {
+                loadSharedUsers();
+            }).catch(error => {
+                console.error('Error removing shared user:', error);
+                alert('Erro ao remover usuário');
+            });
+        }
+
+        // Add this function to handle share request responses
+        function handleShareRequest(action, fromUserId) {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            // Get current user's document
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const data = doc.data();
+                const notifications = data.notifications || [];
+                
+                // Filter out the processed notification
+                const updatedNotifications = notifications.filter(notif => 
+                    !(notif.fromId === fromUserId && notif.type === 'share_request')
+                );
+
+                // Update sharing status in sender's sharedWith array
+                const senderPromise = db.collection('users').doc(fromUserId).get().then(senderDoc => {
+                    const senderData = senderDoc.data();
+                    const sharedWith = senderData.sharedWith || [];
+                    
+                    if (action === 'accept') {
+                        // Update the status if accepted
+                        const updatedSharedWith = sharedWith.map(share => {
+                            if (share.userId === user.uid) {
+                                return { ...share, status: 'accepted' };
+                            }
+                            return share;
+                        });
+                        return db.collection('users').doc(fromUserId).update({
+                            sharedWith: updatedSharedWith
+                        });
+                    } else {
+                        // Remove the share entry if rejected
+                        const filteredSharedWith = sharedWith.filter(share => 
+                            share.userId !== user.uid
+                        );
+                        return db.collection('users').doc(fromUserId).update({
+                            sharedWith: filteredSharedWith
+                        });
+                    }
+                });
+
+                // Update current user's notifications by removing the processed one
+                const notificationPromise = db.collection('users').doc(user.uid).update({
+                    notifications: updatedNotifications
+                });
+
+                return Promise.all([senderPromise, notificationPromise]);
+            }).then(() => {
+                // Show success message
+                const message = action === 'accept' ? 
+                    'Compartilhamento aceito com sucesso!' : 
+                    'Compartilhamento rejeitado';
+                
+                // Close notifications panel
+                document.querySelector('.notifications-list').classList.remove('show');
+                
+                // Update notifications
+                updateNotifications();
+                
+                // Show toast notification
+                showToast(message, action === 'accept' ? 'success' : 'info');
+            }).catch(error => {
+                console.error('Error handling share request:', error);
+                showToast('Erro ao processar solicitação', 'error');
+            });
+        }
+
+        // Add this helper function for toast notifications if you don't have it
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // Trigger reflow to enable animation
+            toast.offsetHeight;
+            
+            // Show toast
+            toast.classList.add('show');
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function updatePowerTips(consumption, previousConsumption) {
+            const powerTips = document.getElementById('powerTips');
+            const tipsSection = document.querySelector('.tips-section');
+            const tips = [];
+
+            // Define consumption thresholds (in kWh)
+            const LOW_CONSUMPTION = 5;    // Good consumption below 5 kWh
+            const HIGH_CONSUMPTION = 15;  // High consumption above 15 kWh
+
+            // Remove existing status classes
+            tipsSection.classList.remove('good', 'medium', 'bad');
+
+            if (consumption <= LOW_CONSUMPTION) {
+                // Low consumption - Good
+                tipsSection.classList.add('good');
+                tips.push({
+                    icon: 'fa-check',
+                    type: 'good',
+                    text: `Excelente! Seu consumo de ${consumption}kWh está muito bom. Continue com os bons hábitos!`
+                });
+                tips.push({
+                    icon: 'fa-star',
+                    type: 'good',
+                    text: 'Você está entre os consumidores mais eficientes!'
+                });
+            } else if (consumption >= HIGH_CONSUMPTION) {
+                // High consumption - Bad
+                tipsSection.classList.add('bad');
+                tips.push({
+                    icon: 'fa-exclamation-triangle',
+                    type: 'warning',
+                    text: `Atenção! Seu consumo de ${consumption}kWh está alto. Sugestões para reduzir:`
+                });
+                tips.push({
+                    icon: 'fa-plug',
+                    type: 'warning',
+                    text: 'Desligue aparelhos em modo standby quando não estiverem em uso'
+                });
+                tips.push({
+                    icon: 'fa-temperature-low',
+                    type: 'warning',
+                    text: 'Ajuste a temperatura dos aparelhos de climatização para níveis mais econômicos'
+                });
+                tips.push({
+                    icon: 'fa-clock',
+                    type: 'warning',
+                    text: 'Use temporizadores para controlar o tempo de uso dos aparelhos'
+                });
+            } else {
+                // Medium consumption
+                tipsSection.classList.add('medium');
+                tips.push({
+                    icon: 'fa-info-circle',
+                    type: 'warning',
+                    text: `Seu consumo de ${consumption}kWh está moderado. Algumas dicas para melhorar:`
+                });
+                tips.push({
+                    icon: 'fa-lightbulb',
+                    type: 'warning',
+                    text: 'Substitua lâmpadas antigas por modelos LED mais eficientes'
+                });
+                tips.push({
+                    icon: 'fa-sun',
+                    type: 'warning',
+                    text: 'Aproveite a luz natural sempre que possível'
+                });
+            }
+
+            // Add consumption trend information if previous data exists
+            if (previousConsumption > 0) {
+                const percentageChange = ((consumption - previousConsumption) / previousConsumption * 100).toFixed(1);
+                const trend = {
+                    icon: percentageChange <= 0 ? 'fa-arrow-down' : 'fa-arrow-up',
+                    type: percentageChange <= 0 ? 'good' : 'warning',
+                    text: `Comparado ao período anterior: ${Math.abs(percentageChange)}% ${percentageChange <= 0 ? 'menor' : 'maior'}`
+                };
+                tips.push(trend);
+            }
+
+            // Generate HTML for tips
+            powerTips.innerHTML = tips.map(tip => `
+                <div class="tip-item">
+                    <div class="tip-icon ${tip.type}">
+                        <i class="fas ${tip.icon}"></i>
+                    </div>
+                    <div class="tip-text">
+                        ${tip.text}
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+
+    <style>
+        .profile-section {
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-picture-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #profilePicture {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-picture-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .profile-picture-container:hover .profile-picture-overlay {
+            transform: translateY(0);
+        }
+
+        .change-picture-btn {
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9em;
+            padding: 10px;
+        }
+
+        .change-picture-btn:hover {
+            color: #4CAF50;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background: #1a1a1a;
+            margin: 15% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .modal-header h2 {
+            color: #fff;
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .option {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .option label {
+            color: #fff;
+            margin-left: 8px;
+        }
+
+        .input-group {
+            margin-top: 10px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background: #2a2a2a;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-group input:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        div#powerTips i {
+            padding: 0;
+        }
+
+        .tips-section.good i {
+            padding: 0;
+        }
+
+        .save-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn:hover {
+            background: linear-gradient(45deg, #45a049, #3d8b40);
+            transform: translateY(-2px);
+        }
+
+        /* Checkbox styles */
+        .checkbox-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            opacity: 0;
+            position: absolute;
+        }
+
+        .checkbox-wrapper label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #4CAF50;
+            border-radius: 4px;
+            margin-right: 10px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-custom::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60%) rotate(45deg) scale(0);
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked + label .checkbox-custom {
+            background: #4CAF50;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked + label .checkbox-custom::after {
+            transform: translate(-50%, -60%) rotate(45deg) scale(1);
+        }
+
+        /* Add these styles to your existing styles */
+        .profile-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-left: auto;
+            padding-left: 1.5rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .profile-btn i {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .profile-btn.change-password {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-btn.change-password:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .profile-btn.logout {
+            background: rgba(231, 76, 60, 0.2);
+        }
+
+        .profile-btn.logout:hover {
+            background: rgba(231, 76, 60, 0.3);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 968px) {
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .profile-actions {
+                flex-direction: row;
+                border-left: none;
+                padding-left: 0;
+                margin-top: 1rem;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .profile-btn {
+                flex: 1;
+                justify-content: center;
+                max-width: 200px;
+            }
+        }
+
+        /* Add these styles */
+        .notification-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .notification-content {
+            background: rgba(28, 28, 28, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            max-width: 500px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .notification-icon {
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .notification-overlay.success .notification-icon i {
+            color: #4CAF50;
+        }
+
+        .notification-overlay.error .notification-icon i {
+            color: #f44336;
+        }
+
+        .notification-text {
+            flex-grow: 1;
+        }
+
+        .notification-text h3 {
+            color: #fff;
+            margin: 0 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .notification-text p {
+            color: #888;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .notification-content {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+        }
+
+        .auth-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .auth-popup {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+
+        .auth-popup-icon {
+            font-size: 2.5rem;
+            color: #ff4444;
+            margin-bottom: 1rem;
+            margin-right: -30px;
+        }
+
+        .auth-popup h2 {
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .auth-popup p {
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-popup-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup-button:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Add these styles */
+        .profile-name-container {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .profile-name-container h3 {
+            margin: 0;
+            display: inline-block;
+        }
+
+        .edit-name-btn {
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #ff4444;
+            font-size: 0.9em;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            padding: 5px;
+            margin-right: -30px;
+        }
+
+        .profile-name-container:hover .edit-name-btn {
+            opacity: 1;
+        }
+
+        .edit-name-btn:hover {
+            color: #ff6666;
+        }
+
+        /* Add these styles for the edit name popup form */
+        .auth-popup-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .auth-popup-form .form-group {
+            position: relative;
+        }
+
+        .auth-popup-form input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup-form input:focus {
+            outline: none;
+            border-color: rgba(255, 68, 68, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .auth-popup-form input::placeholder {
+            color: #666;
+        }
+
+        .auth-popup .cancel-btn {
+            background: #666;
+            margin-top: 1rem;
+        }
+
+        .auth-popup .cancel-btn:hover {
+            background: #777;
+        }
+
+        .dev-icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 4px;
+        }
+
+        .dev-icon {
+            color: #ff4444;
+            font-size: 0.9em;
+            margin-right: 2px;
+            padding-right: 0;
+        }
+
+        .message-header strong {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .lgbt-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+            font-size: 0.9em;
+            cursor: help;
+            background: linear-gradient(45deg, 
+                #ff0018,
+                #ffa52c,
+                #ffff41,
+                #008018,
+                #0000f9,
+                #86007d
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            transition: transform 0.3s ease;
+        }
+
+        .lgbt-badge:hover {
+            transform: scale(1.2);
+        }
+
+        .notifications-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            grid-column: span 1;
+        }
+
+        .notifications-header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification-count {
+            background: #ff4444;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .notification-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            animation: slideIn 0.3s ease;
+            position: relative;
+        }
+
+        .notification-item .close-notification {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.3s ease;
+        }
+
+        .notification-item .close-notification:hover {
+            color: #fff;
+        }
+
+        .notifications-list {
+            position: fixed;
+            top: 80px;
+            right: -400px;
+            width: 380px;
+            max-height: calc(100vh - 100px);
+            padding: 1.5rem;
+            z-index: 1000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .notifications-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .notifications-list.show {
+            right: 0;
+        }
+
+        .notification-item {
+            background: rgb(0 0 0 / 47%);
+            border-radius: 12px;
+            backdrop-filter: blur(30px);
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            animation: slideIn 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .notification-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .notification-item.unread {
+            background: rgb(0 0 0 / 47%);
+            border-left: 3px solid #4CAF50;
+        }
+
+        .notification-content p {
+            margin: 0;
+            color: #fff;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .notification-content p strong {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+
+        .notification-content small {
+            display: block !important;
+            color: #888 !important;
+            font-size: 0.8rem !important;
+            width: 100% !important;
+            padding-bottom: 0.5rem !important;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 0.8rem;
+            padding-top: 0.8rem;
+        }
+
+        .notification-btn {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .accept-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .accept-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+        }
+
+        .reject-btn {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .reject-btn:hover {
+            background: rgba(244, 67, 54, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .no-notifications {
+            color: #888;
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .search-icon {
+            position: relative;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .search-icon i.fas.fa-bell {
+            color: #fff;
+            font-size: 1.2rem;
+            transition: color 0.3s ease;
+            padding: 0;
+        }
+
+        .search-icon:hover i.fas.fa-bell {
+            color: #4CAF50;
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #f44336;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            background: rgba(76, 175, 80, 0.9);
+        }
+
+        .toast-error {
+            background: rgba(244, 67, 54, 0.9);
+        }
+
+        .toast-info {
+            background: rgba(33, 150, 243, 0.9);
+        }
+
+        .mute-notification {
+            color: #ff4444;
+        }
+
+        .mute-notification i {
+            margin-right: 8px;
+            color: red;
+        }
+
+        .mute-notification small {
+            display: block;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .notification-time {
+            color: #888;
+            font-size: 0.8em;
+            margin-top: 4px;
+        }
+
+        i.fas.fa-microphone-slash {
+            padding: 0;
+        }
+
+        /* Add these styles to your existing style section */
+        .form-group {
+            position: relative;
+        }
+        
+        .char-count {
+            position: absolute;
+            right: 10px;
+            bottom: 5px;
+            font-size: 0.8em;
+            color: #888;
+        }
+        
+        .form-group input {
+            margin-bottom: 25px;
+        }
+    </style>
+</body>
+</html> 

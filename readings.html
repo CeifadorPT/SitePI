@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leituras - TGPSI</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                    <li><a href="ranking.html">RANKING</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="readings-section">
+            <div class="readings-header">
+                <h1>Minhas Leituras</h1>
+                <div class="readings-filters">
+                    <div class="filter-group">
+                        <label>Período:</label>
+                        <select id="timeFilter">
+                            <option value="30s">Últimos 30 segundos</option>
+                            <option value="1h">Última Hora</option>
+                            <option value="6h">Últimas 6 Horas</option>
+                            <option value="12h">Últimas 12 Horas</option>
+                            <option value="today">Hoje</option>
+                            <option value="week">Última Semana</option>
+                            <option value="month">Último Mês</option>
+                            <option value="custom">Personalizado</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" id="customDateGroup" style="display: none;">
+                        <label>De:</label>
+                        <input type="date" id="startDate">
+                        <label>Até:</label>
+                        <input type="date" id="endDate">
+                    </div>
+                    <div class="filter-group">
+                        <label>Origem:</label>
+                        <select id="sourceFilter">
+                            <option value="all">Todas</option>
+                            <option value="personal">Pessoais</option>
+                            <option value="shared">Compartilhadas</option>
+                        </select>
+                    </div>
+                    <button id="deleteAllBtn" class="delete-all-btn">
+                        <i class="fas fa-trash-alt"></i>
+                        Excluir Todas
+                    </button>
+                    <button id="exportBtn" class="export-btn">
+                        <i class="fas fa-download"></i>
+                        Exportar
+                    </button>
+                </div>
+            </div>
+
+            <div class="readings-grid">
+                <!-- Summary Cards -->
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="summary-info">
+                        <h3>Total de Leituras</h3>
+                        <p id="totalReadings">0</p>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="summary-info">
+                        <h3>Média de Tensão</h3>
+                        <p id="avgVoltage">0 V</p>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="summary-info">
+                        <h3>Alertas</h3>
+                        <p id="totalAlerts">0</p>
+                    </div>
+                </div>
+
+                <!-- Detailed Graph -->
+                <div class="readings-graph">
+                    <div class="graph-header">
+                        <h3>Histórico de Tensão</h3>
+                        <div class="graph-controls">
+                            <button class="graph-btn" data-view="line">
+                                <i class="fas fa-chart-line"></i>
+                            </button>
+                            <button class="graph-btn" data-view="bar">
+                                <i class="fas fa-chart-bar"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="readingsGraph"></canvas>
+                    </div>
+                </div>
+
+                <!-- Readings Table -->
+                <div class="readings-table">
+                    <div class="table-header">
+                        <h3>Detalhes das Leituras</h3>
+                        <div class="table-controls">
+                            <input type="text" id="searchInput" placeholder="Pesquisar...">
+                            <select id="sortFilter">
+                                <option value="newest">Mais Recentes</option>
+                                <option value="oldest">Mais Antigas</option>
+                                <option value="highest">Maior Tensão</option>
+                                <option value="lowest">Menor Tensão</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Tensão</th>
+                                    <th>Status</th>
+                                    <th>Origem</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="readingsTableBody">
+                                <!-- Readings will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-pagination">
+                        <button id="prevPage" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span>Página <span id="currentPage">1</span> de <span id="totalPages">1</span></span>
+                        <button id="nextPage" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <style>
+        /* Add these styles at the beginning of your style section */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        header.scrolled {
+            background: rgba(0, 0, 0, 0.082);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Adjust z-index of body pseudo elements */
+        body::before,
+        body::after {
+            z-index: 1;
+        }
+
+        /* Main content should be above the glow */
+        main {
+            padding-top: 80px;
+            min-height: calc(100vh - 80px);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Add these styles to fix text colors and enhance the dark theme */
+        body {
+            background: #121212;
+            color: #fff;
+        }
+
+        .readings-section {
+            padding: 2rem;
+            opacity: 0;
+        }
+
+        .summary-card,
+        .readings-graph,
+        .readings-table,
+        .readings-header h1,
+        .readings-filters {
+            opacity: 0;
+        }
+
+        .readings-section.visible {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .readings-section.visible .summary-card {
+            animation: cardSlideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .readings-section.visible .summary-card:nth-child(1) { animation-delay: 0.1s; }
+        .readings-section.visible .summary-card:nth-child(2) { animation-delay: 0.2s; }
+        .readings-section.visible .summary-card:nth-child(3) { animation-delay: 0.3s; }
+
+        .readings-section.visible .readings-graph {
+            animation: cardSlideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation-delay: 0.4s;
+        }
+
+        .readings-section.visible .readings-table {
+            animation: cardSlideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation-delay: 0.5s;
+        }
+
+        .readings-section.visible .readings-header h1,
+        .readings-section.visible .readings-filters {
+            animation: fadeSlideRight 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        .readings-section.visible .readings-filters {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes cardSlideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeSlideRight {
+            from { 
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .readings-header h1 {
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .readings-filters {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            color: #888;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .summary-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .summary-icon {
+            font-size: 1.5rem;
+            color: #4CAF50;
+        }
+
+        .summary-info h3 {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-info p {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .readings-graph {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1.5rem;
+            grid-column: span 3;
+        }
+
+        .graph-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .graph-header h3 {
+            color: #fff;
+            margin: 0;
+        }
+
+        .graph-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .graph-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .graph-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .readings-table {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1.5rem;
+            grid-column: span 3;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .table-header h3 {
+            color: #fff;
+            margin: 0;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .table-controls input,
+        .table-controls select {
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        th {
+            color: #888;
+            font-weight: normal;
+            font-size: 0.9rem;
+        }
+
+        .table-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            color: #888;
+        }
+
+        .table-pagination button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .table-pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .table-pagination button:not(:disabled):hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .export-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            margin-right: 10px;
+            margin-left: auto;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #45a049;
+        }
+
+        .readings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 968px) {
+            .readings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .readings-graph,
+            .readings-table {
+                grid-column: span 1;
+            }
+        }
+
+        /* Add these styles to fix dropdown colors */
+        .filter-group select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.7em top 50%;
+            background-size: 1em auto;
+            padding-right: 2.5em;
+        }
+
+        .filter-group select option {
+            background-color: #1e1e1e;
+            color: #fff;
+            padding: 0.5rem;
+        }
+
+        .filter-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        #sortFilter option {
+            background-color: #1e1e1e;
+            color: #fff;
+            padding: 0.5rem;
+        }
+
+        #timeFilter option,
+        #sourceFilter option {
+            background-color: #1e1e1e;
+            color: #fff;
+            padding: 0.5rem;
+        }
+
+        /* Add these styles for the popup */
+        .auth-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .auth-popup {
+            background: #1e1e1e;
+            border-radius: 15px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            animation: slideUp 0.3s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .auth-popup-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 68, 68, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        .auth-popup-icon i {
+            color: #ff4444;
+            font-size: 1.5rem;
+            padding: 0;
+        }
+
+        .reading-details {
+            margin: 1.5rem 0;
+        }
+
+        .reading-details p {
+            margin: 0.5rem 0;
+            color: #fff;
+        }
+
+        .reading-details strong {
+            color: #888;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Add or update these styles */
+        .reading-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .reading-status i {
+            padding-right: 0 !important; /* Override the default padding */
+        }
+
+        .status-normal {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+
+        .status-warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: #FFC107;
+        }
+
+        .status-danger {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+        }
+
+        /* Add these styles for the popup buttons */
+        .auth-popup-button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #ff4444;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .auth-popup-button:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        .auth-popup .cancel-btn {
+            background: #666;
+            margin-top: 1rem;
+        }
+
+        .auth-popup .cancel-btn:hover {
+            background: #777;
+        }
+
+        /* Add these styles for the delete all button */
+        .delete-all-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            margin-right: 10px;
+            margin-left: auto;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-all-btn:hover {
+            background: #ff3333;
+        }
+
+        /* Update export button margin */
+        .export-btn {
+            margin-left: 0;
+        }
+        i.fas.fa-trash-alt {
+            padding: 0;
+        }
+
+        i.fas.fa-download {
+            padding: 0;
+        }
+
+        i.fas.fa-chart-line {
+            padding: 0;
+        }
+
+        i.fas.fa-chart-bar {
+            padding: 0;
+        }
+    </style>
+
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Initialize Chart
+        const ctx = document.getElementById('readingsGraph').getContext('2d');
+        const readingsGraph = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Tensão (V)',
+                    data: [],
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#888'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#888'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Global variables
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let allReadings = [];
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check authentication
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    loadReadings();
+                    setupRealtimeUpdates();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+
+            // Filter change handlers
+            document.getElementById('timeFilter').addEventListener('change', handleTimeFilterChange);
+            document.getElementById('sourceFilter').addEventListener('change', loadReadings);
+            document.getElementById('sortFilter').addEventListener('change', handleSort);
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+
+            // Custom date inputs
+            document.getElementById('startDate').addEventListener('change', loadReadings);
+            document.getElementById('endDate').addEventListener('change', loadReadings);
+
+            // Pagination
+            document.getElementById('prevPage').addEventListener('click', () => changePage(-1));
+            document.getElementById('nextPage').addEventListener('click', () => changePage(1));
+
+            // Graph type toggle
+            document.querySelectorAll('.graph-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.graph-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updateGraphType(btn.dataset.view);
+                });
+            });
+
+            // Export button
+            document.getElementById('exportBtn').addEventListener('click', exportReadings);
+
+            // Delete all button
+            document.getElementById('deleteAllBtn').addEventListener('click', deleteAllReadings);
+
+            // Add visible class immediately after DOM is loaded
+            requestAnimationFrame(() => {
+                const section = document.querySelector('.readings-section');
+                if (section) {
+                    section.classList.add('visible');
+                }
+            });
+        });
+
+        function handleTimeFilterChange(e) {
+            const customDateGroup = document.getElementById('customDateGroup');
+            customDateGroup.style.display = e.target.value === 'custom' ? 'flex' : 'none';
+            loadReadings();
+        }
+
+        function loadReadings() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const timeFilter = document.getElementById('timeFilter').value;
+            const sourceFilter = document.getElementById('sourceFilter').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            // Get date range
+            let startTimestamp = getStartTimestamp(timeFilter, startDate);
+            let endTimestamp = getEndTimestamp(timeFilter, endDate);
+
+            // Get user's document
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (!doc.exists) return;
+
+                const userData = doc.data();
+                let readings = userData.readings || [];
+                let sharedReadings = userData.sharedReadings || [];
+
+                // Filter by time range
+                readings = readings.filter(r => r.timestamp >= startTimestamp && r.timestamp <= endTimestamp);
+                sharedReadings = sharedReadings.filter(r => r.timestamp >= startTimestamp && r.timestamp <= endTimestamp);
+
+                // Mark personal readings
+                readings = readings.map(r => ({...r, source: 'personal'}));
+
+                // Combine personal and shared readings
+                allReadings = [...readings, ...sharedReadings];
+
+                // Apply source filter
+                if (sourceFilter !== 'all') {
+                    allReadings = allReadings.filter(r => r.source === sourceFilter);
+                }
+
+                // Sort by timestamp (newest first)
+                allReadings.sort((a, b) => b.timestamp - a.timestamp);
+
+                // Update UI
+                updateSummaryCards(allReadings);
+                updateGraph(allReadings);
+                updateTable();
+            });
+        }
+
+        function getStartTimestamp(timeFilter, customStart) {
+            const now = new Date();
+            switch (timeFilter) {
+                case '30s':
+                    return now.getTime() - (30 * 1000); // 30 seconds ago
+                case '1h':
+                    return now.getTime() - (60 * 60 * 1000); // 1 hour ago
+                case '6h':
+                    return now.getTime() - (6 * 60 * 60 * 1000); // 6 hours ago
+                case '12h':
+                    return now.getTime() - (12 * 60 * 60 * 1000); // 12 hours ago
+                case 'today':
+                    return new Date(now.setHours(0, 0, 0, 0)).getTime();
+                case 'week':
+                    return new Date(now.setDate(now.getDate() - 7)).getTime();
+                case 'month':
+                    return new Date(now.setMonth(now.getMonth() - 1)).getTime();
+                case 'custom':
+                    return customStart ? new Date(customStart).getTime() : 0;
+                default:
+                    return 0;
+            }
+        }
+
+        function getEndTimestamp(timeFilter, customEnd) {
+            if (timeFilter === 'custom' && customEnd) {
+                return new Date(customEnd).setHours(23, 59, 59, 999);
+            }
+            return Date.now();
+        }
+
+        function updateSummaryCards(readings) {
+            // Update total readings
+            document.getElementById('totalReadings').textContent = readings.length;
+
+            // Calculate average voltage
+            const avgVoltage = readings.reduce((acc, r) => acc + r.voltage, 0) / readings.length;
+            document.getElementById('avgVoltage').textContent = 
+                `${avgVoltage.toFixed(1)} V`;
+
+            // Count alerts (readings outside normal range)
+            const alerts = readings.filter(r => r.voltage < 200 || r.voltage > 240).length;
+            document.getElementById('totalAlerts').textContent = alerts;
+        }
+
+        function updateGraph(readings) {
+            const timeFilter = document.getElementById('timeFilter').value;
+            
+            // Prepare data for graph
+            const labels = readings.map(r => {
+                const date = new Date(r.timestamp);
+                if (timeFilter === '30s') {
+                    return date.toLocaleTimeString('pt-BR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit' 
+                    });
+                } else if (['1h', '6h', '12h'].includes(timeFilter)) {
+                    return date.toLocaleTimeString('pt-BR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                } else {
+                    return date.toLocaleString('pt-BR', { 
+                        dateStyle: 'short', 
+                        timeStyle: 'short' 
+                    });
+                }
+            });
+            const data = readings.map(r => r.voltage);
+
+            // Update chart
+            readingsGraph.data.labels = labels;
+            readingsGraph.data.datasets[0].data = data;
+            
+            // Update chart options based on time filter
+            if (timeFilter === '30s') {
+                readingsGraph.options.scales.x.ticks.maxRotation = 0;
+                readingsGraph.options.scales.x.ticks.autoSkip = true;
+                readingsGraph.options.scales.x.ticks.maxTicksLimit = 10;
+            } else {
+                readingsGraph.options.scales.x.ticks.maxRotation = 45;
+                readingsGraph.options.scales.x.ticks.autoSkip = true;
+                readingsGraph.options.scales.x.ticks.maxTicksLimit = 20;
+            }
+
+            readingsGraph.update();
+        }
+
+        function updateGraphType(type) {
+            readingsGraph.config.type = type;
+            readingsGraph.update();
+        }
+
+        function updateTable() {
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageReadings = allReadings.slice(start, end);
+
+            const tbody = document.getElementById('readingsTableBody');
+            tbody.innerHTML = '';
+
+            pageReadings.forEach(reading => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(reading.timestamp).toLocaleString()}</td>
+                    <td>${reading.voltage} V</td>
+                    <td>
+                        <span class="reading-status ${getStatusClass(reading.voltage)}">
+                            ${getStatusText(reading.voltage)}
+                        </span>
+                    </td>
+                    <td class="reading-source">
+                        ${reading.source === 'personal' ? 
+                            '<i class="fas fa-user"></i> Pessoal' :
+                            `<i class="fas fa-share-alt"></i> Compartilhado por ${reading.sharedByEmail}`
+                        }
+                    </td>
+                    <td class="reading-actions">
+                        <button class="action-btn" onclick="showReadingDetails(${reading.timestamp})">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        ${reading.source === 'personal' ? `
+                            <button class="action-btn" onclick="deleteReading(${reading.timestamp})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update pagination
+            const totalPages = Math.ceil(allReadings.length / itemsPerPage);
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage >= totalPages;
+        }
+
+        function getStatusClass(voltage) {
+            if (voltage < 200) return 'status-danger';
+            if (voltage > 240) return 'status-danger';
+            if (voltage < 210 || voltage > 230) return 'status-warning';
+            return 'status-normal';
+        }
+
+        function getStatusText(voltage) {
+            if (voltage < 200) return 'Tensão Baixa';
+            if (voltage > 240) return 'Tensão Alta';
+            if (voltage < 210 || voltage > 230) return 'Atenção';
+            return 'Normal';
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            updateTable();
+        }
+
+        function handleSort() {
+            const sortType = document.getElementById('sortFilter').value;
+            
+            switch(sortType) {
+                case 'newest':
+                    allReadings.sort((a, b) => b.timestamp - a.timestamp);
+                    break;
+                case 'oldest':
+                    allReadings.sort((a, b) => a.timestamp - b.timestamp);
+                    break;
+                case 'highest':
+                    allReadings.sort((a, b) => b.voltage - a.voltage);
+                    break;
+                case 'lowest':
+                    allReadings.sort((a, b) => a.voltage - b.voltage);
+                    break;
+            }
+
+            currentPage = 1;
+            updateTable();
+            updateGraph(allReadings);
+        }
+
+        function handleSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            const filteredReadings = allReadings.filter(reading => {
+                const date = new Date(reading.timestamp).toLocaleString().toLowerCase();
+                const voltage = reading.voltage.toString();
+                const source = reading.source.toLowerCase();
+                const sharedBy = (reading.sharedByEmail || '').toLowerCase();
+
+                return date.includes(searchTerm) || 
+                       voltage.includes(searchTerm) || 
+                       source.includes(searchTerm) ||
+                       sharedBy.includes(searchTerm);
+            });
+
+            currentPage = 1;
+            updateTable(filteredReadings);
+            updateGraph(filteredReadings);
+        }
+
+        function showReadingDetails(timestamp) {
+            const reading = allReadings.find(r => r.timestamp === timestamp);
+            if (!reading) return;
+
+            const user = auth.currentUser;
+            if (!user) return;
+
+            if (reading.source === 'personal') {
+                // Handle personal readings as before
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        const sockets = doc.data().sockets || [];
+                        const socket = sockets.find(s => s.id === reading.socketId);
+                        const socketName = socket ? socket.name : "Tomada removida";
+                        showReadingDetailsPopup(reading, socketName);
+                    }
+                });
+            } else {
+                // For shared readings, fetch socket name from the sharing user's document
+                db.collection('users').doc(reading.sharedBy).get().then(doc => {
+                    if (doc.exists) {
+                        const sockets = doc.data().sockets || [];
+                        const socket = sockets.find(s => s.id === reading.socketId);
+                        const socketName = socket ? socket.name : "Tomada removida";
+                        showReadingDetailsPopup(reading, socketName);
+                    } else {
+                        showReadingDetailsPopup(reading, "Tomada não encontrada");
+                    }
+                }).catch(error => {
+                    console.error("Error fetching socket details:", error);
+                    showReadingDetailsPopup(reading, "Tomada não encontrada");
+                });
+            }
+        }
+
+        function showReadingDetailsPopup(reading, socketName) {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <h2>Detalhes da Leitura</h2>
+                    <div class="reading-details">
+                        <p><strong>Data/Hora:</strong> ${new Date(reading.timestamp).toLocaleString()}</p>
+                        <p><strong>Tensão:</strong> ${reading.voltage} V</p>
+                        <p><strong>Status:</strong> ${getStatusText(reading.voltage)}</p>
+                        <p><strong>Tomada:</strong> ${socketName}</p>
+                        <p><strong>Origem:</strong> ${reading.source === 'personal' ? 
+                            'Pessoal' : `Compartilhado por ${reading.sharedByEmail}`}</p>
+                    </div>
+                    <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button">Fechar</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        function deleteReading(timestamp) {
+            if (!confirm('Tem certeza que deseja excluir esta leitura?')) return;
+
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const reading = allReadings.find(r => r.timestamp === timestamp);
+            if (!reading || reading.source !== 'personal') return;
+
+            db.collection('users').doc(user.uid).update({
+                readings: firebase.firestore.FieldValue.arrayRemove(reading)
+            }).then(() => {
+                loadReadings();
+            }).catch(error => {
+                console.error('Error deleting reading:', error);
+                alert('Erro ao excluir leitura');
+            });
+        }
+
+        function exportReadings() {
+            const data = allReadings.map(r => ({
+                timestamp: new Date(r.timestamp).toLocaleString(),
+                voltage: r.voltage,
+                status: getStatusText(r.voltage),
+                source: r.source === 'personal' ? 'Pessoal' : `Compartilhado por ${r.sharedByEmail}`
+            }));
+
+            const csv = convertToCSV(data);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `leituras_${new Date().toISOString()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            // Track export count for achievement
+            const userId = firebase.auth().currentUser.uid;
+            const userRef = db.collection('users').doc(userId);
+            
+            userRef.get().then(doc => {
+                const userData = doc.data();
+                const currentExports = userData.dataExports || 0;
+                const newExportCount = currentExports + 1;
+                
+                // Update export count
+                userRef.update({
+                    dataExports: newExportCount
+                });
+                
+                // Check for achievement
+                if (newExportCount >= 10 && (!userData.achievements || !userData.achievements.data_analyst)) {
+                    unlockAchievement(userId, 'data_analyst');
+                }
+            });
+        }
+
+        function convertToCSV(data) {
+            const headers = Object.keys(data[0]);
+            const rows = [
+                headers.join(','),
+                ...data.map(row => headers.map(header => row[header]).join(','))
+            ];
+            return rows.join('\n');
+        }
+
+        // Update setupRealtimeUpdates to watch for sharedReadings changes
+        function setupRealtimeUpdates() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            let updateInterval;
+
+            // Listen for changes to the user's document
+            const unsubscribe = db.collection('users').doc(user.uid)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        if (data.readings || data.sharedReadings) {
+                            loadReadings();
+                        }
+                    }
+                }, (error) => {
+                    console.error("Error setting up realtime updates:", error);
+                });
+
+            // Add interval for 30-second view
+            function updateTimeBasedView() {
+                const timeFilter = document.getElementById('timeFilter').value;
+                if (timeFilter === '30s') {
+                    // Update more frequently for 30-second view
+                    updateInterval = setInterval(() => {
+                        loadReadings();
+                    }, 1000); // Update every second for smooth 30s view
+                } else {
+                    // Clear interval if not in 30-second view
+                    if (updateInterval) {
+                        clearInterval(updateInterval);
+                        updateInterval = null;
+                    }
+                }
+            }
+
+            // Listen for time filter changes
+            document.getElementById('timeFilter').addEventListener('change', updateTimeBasedView);
+
+            // Initial setup
+            updateTimeBasedView();
+
+            // Cleanup function
+            return () => {
+                unsubscribe();
+                if (updateInterval) {
+                    clearInterval(updateInterval);
+                }
+            };
+        }
+
+        // Add this to your existing JavaScript
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 0) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // Add this function to your JavaScript
+        function deleteAllReadings() {
+            const timeFilter = document.getElementById('timeFilter').value;
+            const startTimestamp = getStartTimestamp(timeFilter, document.getElementById('startDate').value);
+            const endTimestamp = getEndTimestamp(timeFilter, document.getElementById('endDate').value);
+
+            // Show confirmation popup
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h2>Confirmar Exclusão</h2>
+                    <p>Tem certeza que deseja excluir todas as leituras deste período?</p>
+                    <p>Esta ação não pode ser desfeita.</p>
+                    <button onclick="confirmDeleteAll(${startTimestamp}, ${endTimestamp})" class="auth-popup-button">
+                        <i class="fas fa-trash-alt"></i>
+                        Excluir Todas
+                    </button>
+                    <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">
+                        Cancelar
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        function confirmDeleteAll(startTimestamp, endTimestamp) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            // Get current readings
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const readings = data.readings || [];
+                    
+                    // Filter readings to keep those outside the time range
+                    const remainingReadings = readings.filter(r => 
+                        r.timestamp < startTimestamp || r.timestamp > endTimestamp
+                    );
+
+                    // Update firestore with remaining readings
+                    return db.collection('users').doc(user.uid).update({
+                        readings: remainingReadings
+                    });
+                }
+            }).then(() => {
+                // Close popup and reload readings
+                document.querySelector('.auth-popup-overlay').remove();
+                loadReadings();
+            }).catch(error => {
+                console.error('Error deleting readings:', error);
+                alert('Erro ao excluir leituras');
+            });
+        }
+    </script>
+</body>
+</html> 

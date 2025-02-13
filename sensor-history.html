@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico do Sensor - Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html" class="active">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                    <li><a href="ranking.html">RANKING</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <button onclick="history.back()" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </button>
+                <h1>Histórico do Sensor</h1>
+                <button class="simulate-btn" onclick="simulateMotion()">
+                    <i class="fas fa-play"></i>
+                    <span class="simulate-text">Simular Movimento</span>
+                </button>
+            </div>
+
+            <div class="sensor-info-card">
+                <div class="sensor-title">
+                    <div class="sensor-icon">
+                        <i id="sensorIcon" class="fas fa-radar"></i>
+                    </div>
+                    <h2 id="sensorName">Carregando...</h2>
+                </div>
+                <p id="sensorDescription" class="sensor-description">Carregando...</p>
+            </div>
+
+            <div class="history-filters">
+                <div class="filter-group">
+                    <label>Período:</label>
+                    <select id="timeFilter">
+                        <option value="today">Hoje</option>
+                        <option value="week">Última Semana</option>
+                        <option value="month">Último Mês</option>
+                        <option value="all">Todo o Histórico</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Tipo:</label>
+                    <select id="eventTypeFilter">
+                        <option value="all">Todos</option>
+                        <option value="detected">Movimento Detectado</option>
+                        <option value="stopped">Movimento Cessou</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="history-list" id="historyList">
+                <!-- Events will be added here dynamically -->
+            </div>
+        </div>
+    </main>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgb(26, 26, 26, 0.0);
+        }
+
+        main {
+            margin-top: 80px;
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 2rem;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Custom scrollbar styles */
+        main::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        main::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        main::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        main::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Loading animation */
+        .loading {
+            text-align: center;
+            color: #888;
+            padding: 2rem;
+            font-style: italic;
+        }
+
+        /* No events message */
+        .no-events {
+            text-align: center;
+            color: #888;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        /* Error message */
+        .error-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f44336;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            animation: slideUp 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            color: #fff;
+        }
+
+        .simulate-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .simulate-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .simulate-btn.simulating {
+            background: #f44336;
+        }
+
+        .simulate-btn.simulating:hover {
+            background: #d32f2f;
+        }
+
+        .dashboard-container i {
+            padding: 0;
+        }
+
+        .dashboard-header h1 {
+            color: #fff;
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .sensor-info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .sensor-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .sensor-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sensor-icon i {
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .sensor-title h2 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .sensor-description {
+            color: #888;
+            margin: 0;
+        }
+
+        .history-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            color: #888;
+        }
+
+        .filter-group select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.5rem;
+            border-radius: 5px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .history-item.new-item {
+            animation: slideFromTop 0.3s ease-out forwards;
+        }
+
+        .event-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .event-icon {
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .event-icon i {
+            font-size: 1rem;
+            color: #4CAF50;
+        }
+
+        .event-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-type {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .event-time {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .event-duration {
+            color: #4CAF50;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(76, 175, 80, 0.1);
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+        }
+
+        .event-duration i {
+            font-size: 0.8rem;
+        }
+
+        /* Animation keyframes */
+        @keyframes slideFromTop {
+            from { 
+                opacity: 0; 
+                transform: translateY(-20px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from { 
+                transform: translateY(0);
+            }
+            to { 
+                transform: translateY(calc(100% + 1rem));
+            }
+        }
+
+        /* Pagination styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .pagination button {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #888;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            color: #888;
+        }
+
+        .pagination .page-size {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 0.5rem;
+            border-radius: 5px;
+        }
+    </style>
+
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Get sensor ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const sensorId = urlParams.get('id');
+
+        if (!sensorId) {
+            window.location.href = 'motion.html';
+        }
+
+        // Load sensor details and history
+        auth.onAuthStateChanged(function(user) {
+            if (user) {
+                loadSensorDetails(user.uid, sensorId);
+                loadSensorHistory(user.uid, sensorId);
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function loadSensorDetails(userId, sensorId) {
+            db.collection('users').doc(userId).get().then(doc => {
+                if (doc.exists) {
+                    const sensor = doc.data().motionSensors.find(s => s.id === sensorId);
+                    if (sensor) {
+                        document.getElementById('sensorName').textContent = sensor.name;
+                        document.getElementById('sensorDescription').textContent = sensor.description || 'Sem descrição';
+                        document.getElementById('sensorIcon').className = `fas fa-${sensor.icon || 'radar'}`;
+                    }
+                }
+            });
+        }
+
+        function loadSensorHistory(userId, sensorId) {
+            const timeFilter = document.getElementById('timeFilter').value;
+            const eventTypeFilter = document.getElementById('eventTypeFilter').value;
+            const historyList = document.getElementById('historyList');
+            
+            // Show loading state only on first load
+            if (!historyList.children.length) {
+                historyList.innerHTML = '<div class="loading">Carregando...</div>';
+            }
+            
+            db.collection('users').doc(userId).get().then(doc => {
+                if (doc.exists) {
+                    const sensor = doc.data().motionSensors.find(s => s.id === sensorId);
+                    if (sensor) {
+                        let events = sensor.recentEvents || [];
+                        
+                        // Store current events timestamps before updating
+                        const currentTimestamps = Array.from(historyList.querySelectorAll('.history-item'))
+                            .map(item => parseInt(item.dataset.timestamp));
+                        
+                        // Apply filters
+                        const now = Date.now();
+                        const oneDay = 24 * 60 * 60 * 1000;
+                        
+                        if (timeFilter === 'today') {
+                            events = events.filter(event => (now - event.timestamp) < oneDay);
+                        } else if (timeFilter === 'week') {
+                            events = events.filter(event => (now - event.timestamp) < 7 * oneDay);
+                        } else if (timeFilter === 'month') {
+                            events = events.filter(event => (now - event.timestamp) < 30 * oneDay);
+                        }
+                        
+                        if (eventTypeFilter !== 'all') {
+                            events = events.filter(event => event.type === eventTypeFilter);
+                        }
+
+                        // Sort events by timestamp in descending order (newest first)
+                        events.sort((a, b) => b.timestamp - a.timestamp);
+
+                        // Filter to only show detection events
+                        const detectionEvents = events.filter(e => e.type === 'detected');
+
+                        // Pagination
+                        const pageSize = parseInt(document.getElementById('pageSize')?.value || '10');
+                        const currentPage = window.currentPage || 1;
+                        const totalPages = Math.ceil(detectionEvents.length / pageSize);
+                        const startIndex = (currentPage - 1) * pageSize;
+                        const endIndex = startIndex + pageSize;
+                        const currentEvents = detectionEvents.slice(startIndex, endIndex);
+
+                        // Clear existing items
+                        historyList.innerHTML = '';
+
+                        if (currentEvents.length === 0) {
+                            historyList.innerHTML = '<div class="no-events">Nenhum evento encontrado</div>';
+                            updatePagination(0, 0, 0);
+                            return;
+                        }
+
+                        // Add new items
+                        currentEvents.forEach((event, index) => {
+                            const nextStopEvent = events.find(e => 
+                                e.type === 'stopped' && e.timestamp < event.timestamp
+                            );
+                            let duration = '';
+
+                            if (nextStopEvent) {
+                                duration = calculateDuration(event.timestamp, nextStopEvent.timestamp);
+                            }
+
+                            const historyItem = document.createElement('div');
+                            historyItem.className = 'history-item';
+                            historyItem.dataset.timestamp = event.timestamp;
+                            
+                            // Animate if this is a new event
+                            if (!currentTimestamps.includes(event.timestamp)) {
+                                historyItem.classList.add('new-item');
+                            }
+
+                            historyItem.innerHTML = `
+                                <div class="event-info">
+                                    <div class="event-icon">
+                                        <i class="fas fa-walking"></i>
+                                    </div>
+                                    <div class="event-details">
+                                        <span class="event-type">Movimento Detectado</span>
+                                        <span class="event-time">${formatTimestamp(event.timestamp)}</span>
+                                    </div>
+                                </div>
+                                ${duration ? `<span class="event-duration"><i class="fas fa-clock"></i>${duration}</span>` : ''}
+                            `;
+                            historyList.appendChild(historyItem);
+                        });
+
+                        updatePagination(currentPage, totalPages, detectionEvents.length);
+                    }
+                }
+            }).catch(handleError);
+        }
+
+        function calculateDuration(start, end) {
+            const diff = Math.abs(end - start);
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            let duration = '';
+            
+            if (hours > 0) {
+                duration += `${hours}h `;
+            }
+            if (minutes % 60 > 0) {
+                duration += `${minutes % 60}m `;
+            }
+            if (seconds % 60 > 0 || duration === '') {
+                duration += `${seconds % 60}s`;
+            }
+            
+            return duration.trim();
+        }
+
+        function formatTimestamp(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            // Show relative time for recent events
+            if (seconds < 30) {
+                return 'Agora mesmo';
+            } else if (seconds < 60) {
+                return `${seconds} segundos atrás`;
+            } else if (minutes < 60) {
+                return `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} atrás`;
+            } else if (hours < 24) {
+                return `${hours} ${hours === 1 ? 'hora' : 'horas'} atrás`;
+            } else if (days < 7) {
+                return `${days} ${days === 1 ? 'dia' : 'dias'} atrás`;
+            }
+
+            // For older events, show the full date and time
+            const date = new Date(timestamp);
+            return date.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Add a function to update timestamps periodically
+        function updateTimestamps() {
+            const timeElements = document.querySelectorAll('.event-time');
+            timeElements.forEach(element => {
+                const timestamp = parseInt(element.closest('.history-item').dataset.timestamp);
+                element.textContent = formatTimestamp(timestamp);
+            });
+        }
+
+        // Update timestamps every 30 seconds
+        setInterval(updateTimestamps, 30000);
+
+        // Add this to the loadSensorHistory function after adding items
+        updateTimestamps();
+
+        // Add event listeners for filters
+        document.getElementById('timeFilter').addEventListener('change', () => {
+            loadSensorHistory(auth.currentUser.uid, sensorId);
+        });
+
+        document.getElementById('eventTypeFilter').addEventListener('change', () => {
+            loadSensorHistory(auth.currentUser.uid, sensorId);
+        });
+
+        let isSimulating = false;
+        let simulationInterval;
+
+        function simulateMotion() {
+            const button = document.querySelector('.simulate-btn');
+            const icon = button.querySelector('i');
+            const text = button.querySelector('.simulate-text');
+            
+            if (!isSimulating) {
+                // Start simulation
+                isSimulating = true;
+                button.classList.add('simulating');
+                icon.className = 'fas fa-stop';
+                text.textContent = 'Parar Simulação';
+
+                // Add initial detection event
+                addSimulatedEvent('detected');
+
+                // Set up random intervals for motion events
+                simulationInterval = setInterval(() => {
+                    // Randomly decide if we should add a detection or stop event
+                    const eventType = Math.random() < 0.5 ? 'detected' : 'stopped';
+                    addSimulatedEvent(eventType);
+                }, 3000); // New event every 3 seconds
+            } else {
+                // Stop simulation
+                isSimulating = false;
+                button.classList.remove('simulating');
+                icon.className = 'fas fa-play';
+                text.textContent = 'Simular Movimento';
+                clearInterval(simulationInterval);
+
+                // Add final stop event
+                addSimulatedEvent('stopped');
+            }
+        }
+
+        function addSimulatedEvent(type) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const event = {
+                type: type,
+                timestamp: Date.now()
+            };
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const sensorIndex = data.motionSensors.findIndex(s => s.id === sensorId);
+                    
+                    if (sensorIndex !== -1) {
+                        const sensor = data.motionSensors[sensorIndex];
+                        
+                        // Ensure arrays exist
+                        sensor.recentEvents = sensor.recentEvents || [];
+                        
+                        // Add new event at the beginning
+                        sensor.recentEvents.unshift(event);
+                        
+                        // Keep only the last 100 events
+                        if (sensor.recentEvents.length > 100) {
+                            sensor.recentEvents = sensor.recentEvents.slice(0, 100);
+                        }
+                        
+                        // Update sensor data
+                        sensor.lastEvent = event;
+                        sensor.detectionCount = type === 'detected' ? 
+                            (sensor.detectionCount || 0) + 1 : 
+                            (sensor.detectionCount || 0);
+                        
+                        // Update the document
+                        data.motionSensors[sensorIndex] = sensor;
+                        
+                        return db.collection('users').doc(user.uid).update({
+                            motionSensors: data.motionSensors
+                        }).then(() => {
+                            // Reload both the history and the sensor details
+                            loadSensorHistory(user.uid, sensorId);
+                            loadSensorDetails(user.uid, sensorId);
+                            
+                            // Notify the motion.html page about the update
+                            const event = new CustomEvent('sensorUpdate', {
+                                detail: { sensorId: sensorId }
+                            });
+                            window.dispatchEvent(event);
+                        });
+                    }
+                }
+            }).catch(handleError);
+        }
+
+        // Listen for sensor updates
+        window.addEventListener('sensorUpdate', (event) => {
+            if (event.detail.sensorId === sensorId) {
+                loadSensorHistory(auth.currentUser.uid, sensorId);
+            }
+        });
+
+        // Add this function to handle errors
+        function handleError(error) {
+            console.error('Error:', error);
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'error-message';
+            errorMessage.textContent = 'Ocorreu um erro. Por favor, tente novamente.';
+            document.querySelector('.dashboard-container').appendChild(errorMessage);
+            
+            setTimeout(() => {
+                errorMessage.remove();
+            }, 3000);
+        }
+
+        function updatePagination(currentPage, totalPages, totalItems) {
+            const paginationDiv = document.querySelector('.pagination') || document.createElement('div');
+            paginationDiv.className = 'pagination';
+            
+            const pageSize = parseInt(document.getElementById('pageSize')?.value || '10');
+            
+            paginationDiv.innerHTML = `
+                <button onclick="changePage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span class="page-info">
+                    Página ${currentPage} de ${totalPages} (${totalItems} eventos)
+                </span>
+                <button onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <select class="page-size" onchange="changePageSize(this.value)">
+                    <option value="10" ${pageSize === 10 ? 'selected' : ''}>10 por página</option>
+                    <option value="20" ${pageSize === 20 ? 'selected' : ''}>20 por página</option>
+                    <option value="50" ${pageSize === 50 ? 'selected' : ''}>50 por página</option>
+                </select>
+            `;
+            
+            if (!paginationDiv.parentNode) {
+                document.querySelector('.history-list').after(paginationDiv);
+            }
+        }
+
+        function changePage(page) {
+            window.currentPage = page;
+            loadSensorHistory(auth.currentUser.uid, sensorId);
+        }
+
+        function changePageSize(size) {
+            window.currentPage = 1;
+            loadSensorHistory(auth.currentUser.uid, sensorId);
+        }
+    </script>
+</body>
+</html> 

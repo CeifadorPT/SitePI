@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidade - Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="policy-section">
+            <div class="policy-container">
+                <h1>Política de Privacidade</h1>
+                
+                <div class="policy-content">
+                    <div class="policy-card">
+                        <h2><i class="fas fa-shield-alt"></i> Coleta de Dados</h2>
+                        <p>Coletamos apenas os dados necessários para o funcionamento do serviço, incluindo:</p>
+                        <ul>
+                            <li>Informações de conta (email, nome)</li>
+                            <li>Dados de consumo de energia</li>
+                            <li>Configurações de dispositivos</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-card">
+                        <h2><i class="fas fa-lock"></i> Segurança</h2>
+                        <p>Seus dados são protegidos usando:</p>
+                        <ul>
+                            <li>Criptografia de ponta a ponta</li>
+                            <li>Autenticação segura</li>
+                            <li>Backups regulares</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-card">
+                        <h2><i class="fas fa-share-alt"></i> Compartilhamento</h2>
+                        <p>Seus dados nunca serão vendidos ou compartilhados com terceiros sem seu consentimento explícito.</p>
+                    </div>
+
+                    <div class="policy-card">
+                        <h2><i class="fas fa-user-shield"></i> Seus Direitos</h2>
+                        <p>Você tem direito a:</p>
+                        <ul>
+                            <li>Acessar seus dados</li>
+                            <li>Solicitar exclusão</li>
+                            <li>Exportar informações</li>
+                            <li>Atualizar dados pessoais</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <style>
+        .policy-section {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .policy-container h1 {
+            color: #fff;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .policy-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .policy-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .policy-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .policy-card h2 {
+            color: #fff;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .policy-card h2 i {
+            color: #6c5ce7;
+        }
+
+        .policy-card p {
+            color: #888;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .policy-card ul {
+            color: #888;
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .policy-card ul li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .policy-card ul li::before {
+            content: '•';
+            color: #6c5ce7;
+            position: absolute;
+            left: 0;
+        }
+
+        @media (max-width: 768px) {
+            .policy-section {
+                padding: 1rem;
+            }
+
+            .policy-container h1 {
+                font-size: 2rem;
+            }
+
+            .policy-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+
+    <script>
+        // Add blur effect to header on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const header = document.querySelector('header');
+            header.classList.add('scrolled');
+        });
+
+        // Check authentication
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (!user) {
+                const popup = document.createElement('div');
+                popup.className = 'auth-popup-overlay';
+                popup.innerHTML = `
+                    <div class="auth-popup">
+                        <div class="auth-popup-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <h2>Acesso Restrito</h2>
+                        <p>Por favor, faça login para acessar esta página.</p>
+                        <button onclick="window.location.href='index.html'" class="auth-popup-button">OK</button>
+                    </div>
+                `;
+                document.body.appendChild(popup);
+            }
+        });
+    </script>
+</body>
+</html> 

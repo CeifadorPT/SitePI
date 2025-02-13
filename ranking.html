@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking - Apashe</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                    <li><a href="ranking.html" class="active">RANKING</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <section class="dashboard-section">
+            <div class="dashboard-header">
+                <h1>Ranking de Leituras</h1>
+                <div class="date-filter">
+                    <button class="time-btn active">Hoje</button>
+                    <button class="time-btn">Semana</button>
+                    <button class="time-btn">Mês</button>
+                </div>
+            </div>
+            
+            <div class="ranking-grid" id="rankingGrid">
+                <!-- Users will be added here dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const storage = firebase.storage();
+
+        // Function to update ranking
+        function updateRanking(timeRange = 'Hoje') {
+            const rankingGrid = document.getElementById('rankingGrid');
+            rankingGrid.innerHTML = '';
+
+            db.collection('users').get().then((snapshot) => {
+                const users = [];
+                snapshot.forEach((doc) => {
+                    const userData = doc.data();
+                    const readingsCount = userData.readings?.length || 0;
+                    users.push({
+                        name: userData.name || 'Usuário',
+                        email: userData.email,
+                        profilePicture: userData.profilePicture,
+                        plan: userData.plan || 'basic',
+                        readingsCount: readingsCount,
+                        createdAt: userData.createdAt,
+                        isGay: userData.isGay || false
+                    });
+                });
+
+                // Sort users by readings count
+                users.sort((a, b) => b.readingsCount - a.readingsCount);
+
+                // Display top users
+                users.forEach((user, index) => {
+                    const memberSince = user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+                    const rankCard = document.createElement('div');
+                    rankCard.className = 'user-profile';
+                    rankCard.innerHTML = `
+                        <div class="rank-badge">#${index + 1}</div>
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                <img src="${user.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}" alt="Profile Picture">
+                            </div>
+                            <h3>
+                                ${user.isDev ? '<span class="dev-icon-wrapper"><i class="fas fa-hammer dev-icon"></i></span>' : ''}
+                                ${user.name}
+                                ${user.isGay ? '<span class="lgbt-badge" title="LGBT+"><i class="fas fa-heart" style="padding-right: 0;"></i></span>' : ''}
+                            </h3>
+                            <p class="user-email">${user.email}</p>
+                            <div class="user-plan">
+                                <i class="fas fa-crown"></i>
+                                <span>${user.plan.toUpperCase()}</span>
+                            </div>
+                        </div>
+                        <div class="user-stats">
+                            <div class="stat-group">
+                                <i class="fas fa-clock"></i>
+                                <div class="stat-info">
+                                    <span>Membro desde</span>
+                                    <p>${memberSince}</p>
+                                </div>
+                            </div>
+                            <div class="stat-group">
+                                <i class="fas fa-chart-line"></i>
+                                <div class="stat-info">
+                                    <span>Total de leituras</span>
+                                    <p>${user.readingsCount}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    rankingGrid.appendChild(rankCard);
+                });
+            });
+        }
+
+        // Update ranking when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            updateRanking('Hoje');
+        });
+
+        // Add click handlers for time filter buttons
+        document.querySelectorAll('.date-filter .time-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.date-filter .time-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                updateRanking(this.textContent.trim());
+            });
+        });
+    </script>
+
+    <style>
+        .ranking-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 400px));
+            gap: 1.5rem;
+            padding: 1rem 0;
+            justify-content: center;
+            margin: 0 auto;
+            max-width: 1400px;
+        }
+
+        .rank-badge {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .readings-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 12px;
+        }
+
+        .readings-count .count {
+            display: block;
+            color: #4CAF50;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .readings-count .label {
+            display: block;
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+
+        .profile-card {
+            background: rgba(18, 18, 18, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .profile-picture-container {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .profile-picture-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-info h3 {
+            color: #fff;
+            font-size: 1.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .user-email {
+            color: #888;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-item i {
+            color: #ff4444;
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .stat-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-text span {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .stat-text strong {
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .user-plan {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: #fff;
+            margin-top: 5px;
+        }
+
+        .user-plan i {
+            color: #ffd700;
+            font-size: 1em;
+            margin-right: -25px;
+        }
+
+        main {
+            position: relative;
+            z-index: 2;
+            padding-top: 80px;
+        }
+
+        .dashboard-section {
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Add these styles for the navbar blur effect */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        header.scrolled {
+            background: rgba(0, 0, 0, 0.082);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Update the glow effect positioning */
+  
+
+        /* Update plan styling */
+        .user-plan {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: #fff;
+            margin-top: 5px;
+        }
+
+        .user-plan i {
+            color: #ffd700;
+            font-size: 1em;
+            margin-right: -25px;
+        }
+
+        /* Add this to ensure content is above the glow */
+        main {
+            position: relative;
+            z-index: 2;
+            padding-top: 80px;
+        }
+
+        .dashboard-section {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Optional: Add padding to ensure cards don't touch screen edges on mobile */
+        @media (max-width: 768px) {
+            .ranking-grid {
+                padding: 1rem;
+            }
+        }
+
+        /* Update the styles to match dashboard exactly */
+        .user-profile {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0,0,0, 0.37);
+            position: relative;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .user-info {
+            margin-bottom: 25px;
+            position: relative;
+            padding-top: 60px;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #290d0d, #a92525);
+            border-radius: 50%;
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-info h3 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #fff;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-email {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .user-plan {
+            margin-top: -20px;
+            padding: 5px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #fff;
+        }
+
+        .user-plan i {
+            color: #ffd700;
+            font-size: 1em;
+            margin-right: -25px;
+        }
+
+        .user-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+        }
+
+        .stat-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-group i {
+            color: #ff4444;
+            font-size: 1.2em;
+            width: 20px;
+        }
+
+        .stat-info {
+            text-align: left;
+        }
+
+        .stat-info span {
+            color: #888;
+            font-size: 0.8em;
+            display: block;
+        }
+
+        .stat-info p {
+            color: #fff;
+            margin: 0;
+            font-size: 1em;
+        }
+
+        .rainbow-text {
+            background-image: linear-gradient(to right, 
+                violet, indigo, blue, green, yellow, orange, red);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: rainbow-move 8s linear infinite;
+        }
+
+        @keyframes rainbow-move {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .lgbt-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+            font-size: 0.9em;
+            cursor: help;
+            background: linear-gradient(45deg, 
+                #ff0018,
+                #ffa52c,
+                #ffff41,
+                #008018,
+                #0000f9,
+                #86007d
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            transition: transform 0.3s ease;
+        }
+
+        .lgbt-badge:hover {
+            transform: scale(1.2);
+        }
+    </style>
+
+    <!-- Add this script for navbar blur effect -->
+    <script>
+        // Add blur effect to header on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const header = document.querySelector('header');
+            header.classList.add('scrolled');
+        });
+    </script>
+</body>
+</html> 

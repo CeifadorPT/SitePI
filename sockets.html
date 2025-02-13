@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tomadas - Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Add Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <div id="loader-wrapper">
+        <div class="loader">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html" class="active">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <h1>Minhas Tomadas</h1>
+                <button class="add-socket-btn" onclick="showAddSocketPopup()">
+                    <i class="fas fa-plus"></i>
+                    Nova Tomada
+                </button>
+            </div>
+
+            <div class="sockets-grid">
+                <!-- Sockets will be dynamically added here -->
+            </div>
+        </div>
+    </main>
+
+    <style>
+        i {
+            padding: 0 !important;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-header h1 {
+            color: #fff;
+            font-size: 1.8rem;
+        }
+
+        .add-socket-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-socket-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .sockets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .socket-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .socket-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .socket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .socket-name {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .socket-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            color: #fff;
+        }
+
+        .socket-info {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .socket-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+        }
+
+        .status-text {
+            color: #4CAF50;
+            font-size: 0.9rem;
+        }
+
+        .socket-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 0.2rem;
+        }
+
+        .settings-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .settings-modal {
+            background: #1a1a1a;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 0;
+        }
+
+        .settings-header h2 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        .settings-section {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+        }
+
+        .settings-field {
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-field label {
+            color: #888;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .settings-field input,
+        .settings-field textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            padding: 0.8rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .settings-field input:focus,
+        .settings-field textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .settings-button {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-button.cancel {
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+        }
+
+        .settings-button.save {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .settings-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .settings-button.cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .settings-button.save:hover {
+            background: #45a049;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #888;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .input-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .toggle-btn {
+            position: relative;
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent !important;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .toggle-circle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.enabled .toggle-circle {
+            background: #4CAF50;
+            box-shadow: 0 0 10px #4CAF50;
+        }
+
+        .toggle-btn.disabled .toggle-circle {
+            background: #f44336;
+            box-shadow: 0 0 10px #f44336;
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .toggle-btn.enabled:hover .toggle-circle {
+            box-shadow: 0 0 15px #4CAF50;
+        }
+
+        .toggle-btn.disabled:hover .toggle-circle {
+            box-shadow: 0 0 15px #f44336;
+        }
+
+        h3 {
+            color: white;
+        }
+
+        .socket-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            opacity: 1;
+        }
+
+        .schedule-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #fff;
+            user-select: none;
+            font-size: 0.9rem;
+        }
+
+        .schedule-toggle input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            position: relative;
+            margin-right: 8px;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .schedule-toggle input[type="checkbox"]:checked {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .schedule-toggle input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .schedule-toggle input[type="checkbox"]:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .schedule-toggle input[type="checkbox"]:checked:hover {
+            background: #45a049;
+            border-color: #45a049;
+        }
+
+        .time-settings {
+            margin-top: 1.5rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .time-settings input[type="time"] {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            padding: 0.8rem;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .time-settings input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
+        .icon-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .icon-option {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .icon-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .icon-option.selected {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: rgba(255, 68, 68, 0.3);
+            color: #fff;
+        }
+
+        .icon-option i {
+            font-size: 1.2rem;
+        }
+
+        .socket-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .socket-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .socket-icon i {
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .socket-title h3 {
+            margin: 0;
+        }
+
+        body {
+            background: #000;
+            font-family: 'Oswald', sans-serif;
+            position: relative;
+            min-height: 100vh;
+            margin: 0;
+            overflow-y: auto;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            width: 150vw;
+            height: 150vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        body::before {
+            bottom: -20%;
+            left: -20%;
+            background: radial-gradient(
+                circle at bottom left,
+                rgba(255, 0, 0, 0.3) 0%,
+                rgba(255, 0, 0, 0.1) 30%,
+                rgba(255, 0, 0, 0) 50%
+            );
+        }
+
+        body::after {
+            top: -30%;
+            right: -20%;
+            background: radial-gradient(
+                circle at top right,
+                rgba(255, 0, 0, 0.3) 0%,
+                rgba(255, 0, 0, 0.1) 30%,
+                rgba(255, 0, 0, 0) 50%
+            );
+        }
+
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        body::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        body::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        body {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.1) rgba(0, 0, 0, 0.9);
+        }
+
+        main {
+            padding-top: 80px;
+            position: relative;
+            z-index: 2;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.0);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            border-bottom: none;
+        }
+
+        /* Loading animation */
+        #loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .loader {
+            display: flex;
+            gap: 8px;
+        }
+
+        .loader .bar {
+            width: 10px;
+            height: 32px;
+            background: #fff;
+            animation: loader 1.2s cubic-bezier(0, 0.5, 0.5, 1) infinite;
+            border-radius: 4px;
+        }
+
+        .loader .bar:nth-child(1) {
+            animation-delay: -0.24s;
+        }
+
+        .loader .bar:nth-child(2) {
+            animation-delay: -0.12s;
+        }
+
+        .loader .bar:nth-child(3) {
+            animation-delay: 0;
+        }
+
+        @keyframes loader {
+            0% {
+                transform: scaleY(0.4);
+                background: #ff4444;
+            }
+            20% {
+                transform: scaleY(1);
+                background: #fff;
+            }
+            40% {
+                transform: scaleY(0.4);
+                background: #ff4444;
+            }
+            100% {
+                transform: scaleY(0.4);
+                background: #ff4444;
+            }
+        }
+
+        /* Hide loader when content is loaded */
+        .loaded #loader-wrapper {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* Remove old notification styles */
+        .notification,
+        .notification.show,
+        .notification i,
+        .notification.success,
+        .notification.success i,
+        .notification.error,
+        .notification.error i,
+        .notification.info,
+        .notification.info i,
+        .notification-content,
+        .notification-title,
+        .notification-message {
+            /* These styles are now in script.js */
+            display: none;
+        }
+
+        .notification-container {
+            --content-color: black;
+            --background-color: #f3f3f3;
+            --font-size-content: 0.75em;
+            --icon-size: 1em;
+            max-width: 80%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5em;
+            list-style-type: none;
+            font-family: sans-serif;
+            color: var(--content-color);
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 99999;
+            padding: 0;
+            margin: 0;
+        }
+
+        .notification-item {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-direction: row;
+            gap: 1em;
+            overflow: hidden;
+            padding: 10px 15px;
+            border-radius: 6px;
+            background: rgba(76, 175, 80, 0.05);
+            transition: all 250ms ease;
+            animation: slideIn 0.3s ease-out;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+        }
+
+        .notification-item.success {
+            color: #4CAF50;
+            background: rgba(76, 175, 80, 0.08);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .notification-item.error {
+            color: #f44336;
+            background: rgba(244, 67, 54, 0.08);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .notification-item.info {
+            color: #2196F3;
+            background: rgba(33, 150, 243, 0.08);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+
+        .notification-item:hover {
+            transform: scale(1.01);
+            background: rgba(76, 175, 80, 0.12);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+
+        .notification-item.fade-out {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .notification-content {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 0.5em;
+            z-index: 1;
+        }
+
+        .notification-icon {
+            display: flex;
+            align-items: center;
+        }
+
+        .notification-icon svg {
+            width: 24px;
+            height: 24px;
+            color: currentColor;
+        }
+
+        .notification-text {
+            font-size: var(--font-size-content);
+            user-select: none;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .notification-close {
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 5px;
+            transition: all 250ms;
+            z-index: 1;
+        }
+
+        .notification-close:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: currentColor;
+            width: 100%;
+            transform: translateX(100%);
+            animation: progressBar 5s linear forwards;
+            opacity: 0.3;
+        }
+
+        @keyframes progressBar {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Check authentication
+        auth.onAuthStateChanged(function(user) {
+            if (user) {
+                loadSockets()
+                    .then(() => {
+                        // Hide loader after content is loaded
+                        document.body.classList.add('loaded');
+                    })
+                    .catch(error => {
+                        console.error("Error in auth state change:", error);
+                        document.body.classList.add('loaded');
+                    });
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function loadSockets() {
+            const user = auth.currentUser;
+            const socketsGrid = document.querySelector('.sockets-grid');
+
+            return db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const sockets = data.sockets || [];
+                    const readings = data.readings || [];
+                    
+                    // Group readings by socket
+                    const socketReadings = readings.reduce((acc, reading) => {
+                        if (!acc[reading.socketId]) {
+                            acc[reading.socketId] = [];
+                        }
+                        acc[reading.socketId].push(reading);
+                        return acc;
+                    }, {});
+
+                    socketsGrid.innerHTML = sockets.map(socket => {
+                        const socketData = socketReadings[socket.id] || [];
+                        const lastReading = socketData[socketData.length - 1];
+                        
+                        return createSocketCard(socket);
+                    }).join('');
+                }
+            }).catch(error => {
+                console.error("Error loading sockets:", error);
+                socketsGrid.innerHTML = '<div class="error-message">Erro ao carregar tomadas</div>';
+            });
+        }
+
+        const ALLOWED_HTML_TAGS = {
+            'b': [], // bold
+            'strong': [], // bold
+            'i': [], // italic
+        };
+
+        function sanitizeHTML(input) {
+            const doc = new DOMParser().parseFromString(input, 'text/html');
+            const sanitizedContent = [];
+            
+            function processNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    sanitizedContent.push(node.textContent);
+                    return;
+                }
+                
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tag = node.tagName.toLowerCase();
+                    if (ALLOWED_HTML_TAGS.hasOwnProperty(tag)) {
+                        sanitizedContent.push(`<${tag}>`);
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                        sanitizedContent.push(`</${tag}>`);
+                    } else {
+                        // For disallowed tags, just process their children as text
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                    }
+                }
+            }
+            
+            processNode(doc.body);
+            return sanitizedContent.join('');
+        }
+
+        function createSocketCard(socket) {
+            return `
+                <div class="socket-card ${socket.active ? 'active' : ''}">
+                    <div class="socket-header">
+                        <div class="socket-title">
+                            <div class="socket-icon">
+                                <i class="fas fa-${sanitizeHTML(socket.icon || 'lightbulb')}"></i>
+                            </div>
+                            <h3>${sanitizeHTML(socket.name)}</h3>
+                        </div>
+                        <div class="socket-actions">
+                            <button class="action-btn toggle-btn ${socket.enabled ? 'enabled' : 'disabled'}" 
+                                    onclick="toggleSocket('${sanitizeHTML(socket.id)}', ${!socket.enabled})"
+                                    data-socket-id="${sanitizeHTML(socket.id)}"
+                                    data-enabled="${socket.enabled}">
+                                <div class="toggle-circle"></div>
+                            </button>
+                            <button class="action-btn" onclick="showSchedulePopup('${sanitizeHTML(socket.id)}')">
+                                <i class="fas fa-stopwatch"></i>
+                            </button>
+                            <button class="action-btn" onclick="showEditSocketPopup('${sanitizeHTML(socket.id)}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn" onclick="deleteSocket('${sanitizeHTML(socket.id)}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="socket-info">
+                        ${sanitizeHTML(socket.description || 'Sem descrição')}
+                    </div>
+                    <div class="socket-status">
+                        <div class="status-indicator" style="background: ${!socket.enabled ? '#ff9800' : socket.active ? '#4CAF50' : '#ff4444'}"></div>
+                        <div class="status-text" style="color: ${!socket.enabled ? '#ff9800' : socket.active ? '#4CAF50' : '#ff4444'}">
+                            ${!socket.enabled ? 'Desativado' : socket.active ? 'Em uso' : 'Não usado'}
+                        </div>
+                    </div>
+                    <div class="socket-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${sanitizeHTML(String(socket.readings || 0))}</div>
+                            <div class="stat-label">Leituras</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${sanitizeHTML(String(socket.lastReading || '0'))}V</div>
+                            <div class="stat-label">Última Leitura</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showAddSocketPopup() {
+            const popup = document.createElement('div');
+            popup.className = 'settings-modal-overlay';
+            popup.innerHTML = `
+                <div class="settings-modal">
+                    <div class="settings-header">
+                        <h2>Nova Tomada</h2>
+                        <button class="close-btn" onclick="this.closest('.settings-modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="settings-content">
+                        <div class="settings-section">
+                            <div class="settings-field">
+                                <label for="socketIcon">Ícone</label>
+                                <div class="icon-selector">
+                                    <button type="button" class="icon-option selected" data-icon="lightbulb">
+                                        <i class="fas fa-lightbulb"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="bolt-lightning">
+                                        <i class="fas fa-bolt-lightning"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="house">
+                                        <i class="fas fa-house"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="shield-halved">
+                                        <i class="fas fa-shield-halved"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="gear">
+                                        <i class="fas fa-gear"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="video">
+                                        <i class="fas fa-video"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="video-slash">
+                                        <i class="fas fa-video-slash"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="tv">
+                                        <i class="fas fa-tv"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="desktop">
+                                        <i class="fas fa-desktop"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="mobile">
+                                        <i class="fas fa-mobile"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="gamepad">
+                                        <i class="fas fa-gamepad"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="microchip">
+                                        <i class="fas fa-microchip"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="wifi">
+                                        <i class="fas fa-wifi"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="temperature-high">
+                                        <i class="fas fa-temperature-high"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="fan">
+                                        <i class="fas fa-fan"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="shower">
+                                        <i class="fas fa-shower"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="couch">
+                                        <i class="fas fa-couch"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="bed">
+                                        <i class="fas fa-bed"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="kitchen-set">
+                                        <i class="fas fa-kitchen-set"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="blender">
+                                        <i class="fas fa-blender"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="coffee-maker">
+                                        <i class="fas fa-mug-hot"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="play">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="pause">
+                                        <i class="fas fa-pause"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="music">
+                                        <i class="fas fa-music"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="brain">
+                                        <i class="fas fa-brain"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="warehouse">
+                                        <i class="fas fa-warehouse"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="robot">
+                                        <i class="fas fa-robot"></i>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="socketIcon" value="lightbulb">
+                            </div>
+                            <div class="settings-field">
+                                <label for="socketName">Nome da Tomada</label>
+                                <input type="text" id="socketName" placeholder="Ex: Tomada da Sala">
+                            </div>
+                            <div class="settings-field">
+                                <label for="socketDescription">Descrição</label>
+                                <textarea id="socketDescription" placeholder="Descrição opcional da tomada"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-footer">
+                        <button class="settings-button cancel" onclick="this.closest('.settings-modal-overlay').remove()">Cancelar</button>
+                        <button id="addSocketButton" class="settings-button save" onclick="handleAddSocket(this)">Adicionar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            setupIconSelector(popup);
+        }
+
+        // New function to handle the add socket button click
+        function handleAddSocket(buttonElement) {
+            // Disable the button immediately
+            buttonElement.disabled = true;
+            buttonElement.style.opacity = '0.7';
+            buttonElement.style.cursor = 'not-allowed';
+
+            const name = sanitizeHTML(document.getElementById('socketName').value.trim());
+            const description = sanitizeHTML(document.getElementById('socketDescription').value.trim());
+            const icon = sanitizeHTML(document.getElementById('socketIcon').value);
+            
+            if (!name) {
+                showToast('Digite um nome para a tomada', 'error');
+                // Re-enable the button if validation fails
+                buttonElement.disabled = false;
+                buttonElement.style.opacity = '1';
+                buttonElement.style.cursor = 'pointer';
+                return;
+            }
+
+            addSocket(name, description, icon, buttonElement);
+        }
+
+        async function addSocket(name, description, icon, buttonElement) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            try {
+                console.log('Adding socket:', { name, description, icon });
+
+                const newSocket = {
+                    id: Date.now().toString(),
+                    name,
+                    description,
+                    icon,
+                    active: false,
+                    readings: 0,
+                    lastReading: 0,
+                    createdAt: Date.now(),
+                    enabled: true
+                };
+
+                console.log('New socket object:', newSocket);
+
+                const doc = await db.collection('users').doc(user.uid).get();
+                const sockets = doc.data().sockets || [];
+                sockets.push(newSocket);
+                
+                await db.collection('users').doc(user.uid).update({ sockets });
+                
+                document.querySelector('.settings-modal-overlay').remove();
+                loadSockets();
+                console.log('Showing toast for added socket:', name);
+                showToast(`${name} adicionada`, 'success');
+            } catch (error) {
+                console.error("Error adding socket:", error);
+                console.log('Showing error toast');
+                showToast('Erro ao adicionar', 'error');
+                
+                buttonElement.disabled = false;
+                buttonElement.style.opacity = '1';
+                buttonElement.style.cursor = 'pointer';
+            }
+        }
+
+        function deleteSocket(socketId) {
+            console.log('Deleting socket:', socketId);
+            const user = auth.currentUser;
+            if (!user) return;
+
+            if (confirm('Tem certeza que deseja excluir esta tomada?')) {
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        const sockets = doc.data().sockets;
+                        const socketToDelete = sockets.find(s => s.id === socketId);
+                        console.log('Socket to delete:', socketToDelete);
+                        const updatedSockets = sockets.filter(s => s.id !== socketId);
+                        return db.collection('users').doc(user.uid).update({ sockets: updatedSockets }).then(() => socketToDelete);
+                    }
+                }).then((deletedSocket) => {
+                    console.log('Showing toast for deleted socket:', deletedSocket);
+                    showToast(`${deletedSocket.name} removida`, 'success');
+                    loadSockets();
+                }).catch(error => {
+                    console.error("Error deleting socket:", error);
+                    console.log('Showing error toast for delete');
+                    showToast('Erro ao remover', 'error');
+                });
+            }
+        }
+
+        function showEditSocketPopup(socketId) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const socket = doc.data().sockets.find(s => s.id === socketId);
+                    if (!socket) return;
+
+                    const popup = document.createElement('div');
+                    popup.className = 'settings-modal-overlay';
+                    popup.innerHTML = `
+                        <div class="settings-modal">
+                            <div class="settings-header">
+                                <h2>Editar Tomada</h2>
+                                <button class="close-btn" onclick="this.closest('.settings-modal-overlay').remove()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="settings-content">
+                                <div class="settings-section">
+                                    <div class="settings-field">
+                                        <label for="socketIcon">Ícone</label>
+                                        <div class="icon-selector">
+                                            <button type="button" class="icon-option" data-icon="lightbulb">
+                                                <i class="fas fa-lightbulb"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="bolt-lightning">
+                                                <i class="fas fa-bolt-lightning"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="house">
+                                                <i class="fas fa-house"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="shield-halved">
+                                                <i class="fas fa-shield-halved"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="gear">
+                                                <i class="fas fa-gear"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="video">
+                                                <i class="fas fa-video"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="video-slash">
+                                                <i class="fas fa-video-slash"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="tv">
+                                                <i class="fas fa-tv"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="desktop">
+                                                <i class="fas fa-desktop"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="mobile">
+                                                <i class="fas fa-mobile"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="gamepad">
+                                                <i class="fas fa-gamepad"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="microchip">
+                                                <i class="fas fa-microchip"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="wifi">
+                                                <i class="fas fa-wifi"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="temperature-high">
+                                                <i class="fas fa-temperature-high"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="fan">
+                                                <i class="fas fa-fan"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="shower">
+                                                <i class="fas fa-shower"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="couch">
+                                                <i class="fas fa-couch"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="bed">
+                                                <i class="fas fa-bed"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="kitchen-set">
+                                                <i class="fas fa-kitchen-set"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="blender">
+                                                <i class="fas fa-blender"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="coffee-maker">
+                                                <i class="fas fa-mug-hot"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="play">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="pause">
+                                                <i class="fas fa-pause"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="music">
+                                                <i class="fas fa-music"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="brain">
+                                                <i class="fas fa-brain"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="warehouse">
+                                                <i class="fas fa-warehouse"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="robot">
+                                                <i class="fas fa-robot"></i>
+                                            </button>
+                                        </div>
+                                        <input type="hidden" id="editSocketIcon" value="${sanitizeHTML(socket.icon || 'lightbulb')}">
+                                    </div>
+                                    <div class="settings-field">
+                                        <label for="editSocketName">Nome da Tomada</label>
+                                        <input type="text" id="editSocketName" value="${sanitizeHTML(socket.name)}" placeholder="Ex: Sala de Estar">
+                                    </div>
+                                    <div class="settings-field">
+                                        <label for="editSocketDescription">Descrição</label>
+                                        <textarea id="editSocketDescription" placeholder="Descrição da tomada">${sanitizeHTML(socket.description || '')}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-footer">
+                                <button class="settings-button cancel" onclick="this.closest('.settings-modal-overlay').remove()">Cancelar</button>
+                                <button class="settings-button save" onclick="saveSocketEdit('${sanitizeHTML(socket.id)}')">Salvar</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(popup);
+
+                    // Add icon selector functionality and select current icon
+                    setupIconSelector(popup);
+                    const currentIcon = sanitizeHTML(socket.icon || 'lightbulb');
+                    popup.querySelector(`.icon-option[data-icon="${currentIcon}"]`).classList.add('selected');
+                }
+            });
+        }
+
+        function saveSocketEdit(socketId) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const name = sanitizeHTML(document.getElementById('editSocketName').value.trim());
+            const description = sanitizeHTML(document.getElementById('editSocketDescription').value.trim());
+            const icon = sanitizeHTML(document.getElementById('editSocketIcon').value);
+
+            if (!name) {
+                showToast('Nome da tomada é obrigatório', 'error');
+                return;
+            }
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const sockets = doc.data().sockets || [];
+                    const socketIndex = sockets.findIndex(s => s.id === socketId);
+                    
+                    if (socketIndex === -1) {
+                        showToast('Tomada não encontrada', 'error');
+                        return;
+                    }
+
+                    // Update socket properties while preserving other data
+                    sockets[socketIndex] = {
+                        ...sockets[socketIndex],
+                        name,
+                        description,
+                        icon,
+                        lastUpdated: new Date().getTime()
+                    };
+
+                    return db.collection('users').doc(user.uid).update({ sockets });
+                }
+            }).then(() => {
+                document.querySelector('.settings-modal-overlay').remove();
+                showToast('Tomada atualizada com sucesso', 'success');
+                loadSockets();
+            }).catch(error => {
+                console.error("Error updating socket:", error);
+                showToast('Erro ao atualizar tomada', 'error');
+            });
+        }
+
+        function showSchedulePopup(socketId) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const socket = doc.data().sockets.find(s => s.id === socketId);
+                    if (!socket) return;
+
+                    const schedule = socket.schedule || { enabled: false, start: '08:00', end: '18:00' };
+                    
+                    const popup = document.createElement('div');
+                    popup.className = 'settings-modal-overlay';
+                    popup.innerHTML = `
+                        <div class="settings-modal">
+                            <div class="settings-header">
+                                <h2>Programação - ${sanitizeHTML(socket.name)}</h2>
+                                <button class="close-btn" onclick="this.closest('.settings-modal-overlay').remove()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="settings-content">
+                                <div class="settings-section">
+                                    <div class="settings-field">
+                                        <label class="schedule-toggle">
+                                            <input type="checkbox" id="scheduleEnabled" ${schedule.enabled ? 'checked' : ''}>
+                                            Ativar programação
+                                        </label>
+                                    </div>
+                                    <div class="time-settings" ${!schedule.enabled ? 'style="opacity: 0.5; pointer-events: none;"' : ''}>
+                                        <div class="settings-field">
+                                            <label for="startTime">Horário de início</label>
+                                            <input type="time" id="startTime" value="${sanitizeHTML(schedule.start)}">
+                                        </div>
+                                        <div class="settings-field">
+                                            <label for="endTime">Horário de término</label>
+                                            <input type="time" id="endTime" value="${sanitizeHTML(schedule.end)}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-footer">
+                                <button class="settings-button cancel" onclick="this.closest('.settings-modal-overlay').remove()">Cancelar</button>
+                                <button class="settings-button save" onclick="saveSchedule('${sanitizeHTML(socket.id)}')">Salvar</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(popup);
+
+                    // Add event listener for schedule toggle
+                    const scheduleEnabled = popup.querySelector('#scheduleEnabled');
+                    const timeSettings = popup.querySelector('.time-settings');
+                    scheduleEnabled.addEventListener('change', function() {
+                        timeSettings.style.opacity = this.checked ? '1' : '0.5';
+                        timeSettings.style.pointerEvents = this.checked ? 'auto' : 'none';
+                    });
+                }
+            });
+        }
+
+        function saveSchedule(socketId) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const enabled = document.getElementById('scheduleEnabled').checked;
+            const start = document.getElementById('startTime').value;
+            const end = document.getElementById('endTime').value;
+
+            if (enabled && (!start || !end)) {
+                showToast('Defina os horários', 'error');
+                return;
+            }
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const sockets = doc.data().sockets || [];
+                    const socketIndex = sockets.findIndex(s => s.id === socketId);
+                    
+                    if (socketIndex === -1) {
+                        showToast('Tomada não encontrada', 'error');
+                        return;
+                    }
+
+                    sockets[socketIndex].schedule = { enabled, start, end };
+
+                    if (enabled) {
+                        const now = new Date();
+                        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                        const shouldBeEnabled = isTimeInRange(currentTime, start, end);
+                        
+                        if (sockets[socketIndex].enabled !== shouldBeEnabled) {
+                            sockets[socketIndex].enabled = shouldBeEnabled;
+                            const timeMessage = shouldBeEnabled ? 'dentro' : 'fora';
+                            showToast(`${sockets[socketIndex].name} ${shouldBeEnabled ? 'ligada' : 'desligada'}`, 'info');
+                        }
+                    }
+                    
+                    return db.collection('users').doc(user.uid).update({ sockets });
+                }
+            }).then(() => {
+                document.querySelector('.settings-modal-overlay').remove();
+                showToast('Programação salva', 'success');
+                loadSockets();
+                checkSchedules();
+            }).catch(error => {
+                console.error("Error saving schedule:", error);
+                showToast('Erro ao salvar programação', 'error');
+            });
+        }
+
+        function toggleSocket(socketId, enabled, isScheduled = false) {
+            console.log('Toggling socket:', { socketId, enabled, isScheduled });
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const userDocRef = db.collection('users').doc(user.uid);
+
+            return userDocRef.get()
+                .then(doc => {
+                    if (!doc.exists) {
+                        throw new Error('User document not found');
+                    }
+
+                    const data = doc.data();
+                    const sockets = [...(data.sockets || [])];
+                    const socketIndex = sockets.findIndex(s => s.id === socketId);
+                    
+                    if (socketIndex === -1) {
+                        throw new Error('Socket not found');
+                    }
+
+                    console.log('Found socket:', sockets[socketIndex]);
+
+                    sockets[socketIndex] = {
+                        ...sockets[socketIndex],
+                        enabled: enabled,
+                        lastUpdated: new Date().getTime()
+                    };
+
+                    return userDocRef.set({
+                        ...data,
+                        sockets: sockets
+                    }, { merge: true }).then(() => sockets[socketIndex]);
+                })
+                .then((updatedSocket) => {
+                    console.log('Socket updated:', updatedSocket);
+                    if (!isScheduled) {
+                        console.log('Showing toast for toggled socket:', updatedSocket.name);
+                        showToast(`${updatedSocket.name} ${enabled ? 'ligada' : 'desligada'}`, 'success');
+                    }
+                    return loadSockets();
+                })
+                .catch(error => {
+                    console.error("Error toggling socket:", error);
+                    console.log('Showing error toast for toggle');
+                    showToast('Erro ao alterar estado', 'error');
+                    throw error;
+                });
+        }
+
+        function checkSchedules() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const sockets = doc.data().sockets || [];
+                    const now = new Date();
+                    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+                    sockets.forEach(socket => {
+                        if (socket.schedule?.enabled) {
+                            const shouldBeEnabled = isTimeInRange(currentTime, socket.schedule.start, socket.schedule.end);
+
+                            if (socket.enabled !== shouldBeEnabled) {
+                                toggleSocket(socket.id, shouldBeEnabled, true);
+                                const timeMessage = shouldBeEnabled ? 'dentro' : 'fora';
+                                showToast(`${socket.name} ${shouldBeEnabled ? 'ligada' : 'desligada'}`, 'info');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function isTimeInRange(current, start, end) {
+            // Convert all times to minutes since midnight for easier comparison
+            const currentMinutes = timeToMinutes(current);
+            const startMinutes = timeToMinutes(start);
+            const endMinutes = timeToMinutes(end);
+
+            // Handle overnight schedules (when end time is less than start time)
+            if (startMinutes > endMinutes) {
+                // Example: start = 22:00 (1320 mins), end = 05:00 (300 mins)
+                // Current time should be >= start OR <= end
+                return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+            } else {
+                // Normal daytime schedule
+                // Example: start = 08:00 (480 mins), end = 17:00 (1020 mins)
+                // Current time should be between start and end
+                return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+            }
+        }
+
+        function timeToMinutes(time) {
+            if (!time) return 0;
+            const [hours, minutes] = time.split(':').map(Number);
+            // Validate hours and minutes
+            if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+                console.error('Invalid time format:', time);
+                return 0;
+            }
+            return (hours * 60) + minutes;
+        }
+
+        // Add the setupSocketStatusListener function
+        function setupSocketStatusListener() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            // Listen for changes to the user's document
+            const unsubscribe = db.collection('users').doc(user.uid)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const sockets = doc.data().sockets || [];
+                        const currentSocketId = sessionStorage.getItem('currentSocket');
+                        
+                        if (currentSocketId) {
+                            const socket = sockets.find(s => s.id === currentSocketId);
+                        }
+                    }
+                }, (error) => {
+                    console.error("Error setting up socket status listener:", error);
+                });
+
+            // Store the unsubscribe function
+            window.socketStatusUnsubscribe = unsubscribe;
+        }
+
+        // Update the initialization code to handle cleanup
+        document.addEventListener('DOMContentLoaded', function() {
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    // Clear any existing listeners
+                    if (window.socketStatusUnsubscribe) {
+                        window.socketStatusUnsubscribe();
+                    }
+                    
+                    setupSocketStatusListener();
+                    loadSockets()
+                        .then(() => {
+                            // Hide loader after content is loaded
+                            document.body.classList.add('loaded');
+                        })
+                        .catch(error => {
+                            console.error("Error loading sockets:", error);
+                            document.body.classList.add('loaded');
+                        });
+                    
+                    // Initial check
+                    checkSchedules();
+                    
+                    // Clear any existing interval
+                    if (window.scheduleCheckInterval) {
+                        clearInterval(window.scheduleCheckInterval);
+                    }
+                    
+                    // Check every 30 seconds
+                    window.scheduleCheckInterval = setInterval(checkSchedules, 30000);
+                } else {
+                    // Clean up when user logs out
+                    if (window.socketStatusUnsubscribe) {
+                        window.socketStatusUnsubscribe();
+                    }
+                    if (window.scheduleCheckInterval) {
+                        clearInterval(window.scheduleCheckInterval);
+                    }
+                }
+            });
+        });
+
+        // Add cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (window.socketStatusUnsubscribe) {
+                window.socketStatusUnsubscribe();
+            }
+            if (window.scheduleCheckInterval) {
+                clearInterval(window.scheduleCheckInterval);
+            }
+        });
+
+        // Add this helper function for icon selector
+        function setupIconSelector(container) {
+            const iconOptions = container.querySelectorAll('.icon-option');
+            const iconInput = container.querySelector('input[type="hidden"]');
+
+            iconOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    iconOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    iconInput.value = option.dataset.icon;
+                });
+            });
+        }
+
+        function getNotificationContainer() {
+            let container = document.querySelector('.notification-container');
+            if (!container) {
+                container = document.createElement('ul');
+                container.className = 'notification-container';
+                document.body.appendChild(container);
+            }
+            return container;
+        }
+
+        function showToast(message, type = 'success') {
+            const container = getNotificationContainer();
+            
+            const notificationItem = document.createElement('li');
+            notificationItem.className = `notification-item ${type}`;
+            
+            const icons = {
+                success: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.5 11.5 11 14l4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>`,
+                error: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>`,
+                info: `<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>`
+            };
+            
+            notificationItem.innerHTML = `
+                <div class="notification-content">
+                    <div class="notification-icon">
+                        <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+                            ${icons[type] || icons.info}
+                        </svg>
+                    </div>
+                    <div class="notification-text">
+                        ${message}
+                    </div>
+                </div>
+                <div class="notification-icon notification-close">
+                    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+                        <path
+                            stroke="currentColor"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18 17.94 6M18 18 6.06 6"
+                        ></path>
+                    </svg>
+                </div>
+                <div class="notification-progress-bar"></div>
+            `;
+
+            const closeButton = notificationItem.querySelector('.notification-close');
+            closeButton.addEventListener('click', () => {
+                notificationItem.classList.add('fade-out');
+                setTimeout(() => {
+                    notificationItem.remove();
+                }, 300);
+            });
+
+            container.appendChild(notificationItem);
+
+            setTimeout(() => {
+                notificationItem.classList.add('fade-out');
+                setTimeout(() => {
+                    notificationItem.remove();
+                }, 300);
+            }, 4700); // 5000 - 300 to account for animation duration
+        }
+    </script>
+</body>
+</html>

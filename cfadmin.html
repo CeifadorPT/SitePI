@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - TGPSI</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <div id="loader-wrapper">
+        <div class="loader">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                    <li><a href="ranking.html">RANKING</a></li>
+                    <li id="adminNavItem"><a href="cfadmin.html" class="active">ADMIN</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="admin-section">
+            <div class="admin-header">
+                <h1>Admin Panel</h1>
+                <div class="search-box">
+                    <input type="text" id="userSearch" placeholder="Procurar usuário por nome ou email...">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+
+            <div class="admin-grid">
+                <!-- Users Overview Card -->
+                <div class="admin-card wide">
+                    <div class="card-header">
+                        <h3>Visão Geral dos Usuários</h3>
+                        <div class="card-actions">
+                            <button class="refresh-btn" onclick="refreshUserStats()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <i class="fas fa-users"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="totalUsers">0</span>
+                                <span class="stat-label">Total de Usuários</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-user-check"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="activeUsers">0</span>
+                                <span class="stat-label">Usuários Ativos</span>
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-crown"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="premiumUsers">0</span>
+                                <span class="stat-label">Usuários Premium</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User List Card -->
+                <div class="admin-card wide">
+                    <div class="card-header">
+                        <h3>Lista de Usuários</h3>
+                        <div class="card-actions">
+                            <select id="userFilter">
+                                <option value="all">Todos</option>
+                                <option value="active">Ativos</option>
+                                <option value="premium">Premium</option>
+                                <option value="muted">Silenciados</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="users-list" id="usersList">
+                        <!-- Users will be populated here -->
+                    </div>
+                    <div class="pagination">
+                        <button onclick="previousPage()" id="prevBtn">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="pageInfo">Página 1</span>
+                        <button onclick="nextPage()" id="nextBtn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Card -->
+                <div class="admin-card wide">
+                    <div class="card-header">
+                        <h3>Atividade Recente</h3>
+                        <div class="activity-filter">
+                            <select id="activityFilter">
+                                <option value="all">Todas as Atividades</option>
+                                <option value="login">Logins</option>
+                                <option value="mute">Silenciamentos</option>
+                                <option value="premium">Alterações Premium</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="activity-list" id="adminActivityList">
+                        <!-- Activities will be populated here -->
+                    </div>
+                    <div class="activity-pagination">
+                        <button id="prevActivityBtn" onclick="previousActivityPage()" class="pagination-btn">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="activityPageInfo" class="page-info">Página 1</span>
+                        <button id="nextActivityBtn" onclick="nextActivityPage()" class="pagination-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Add this before closing body tag -->
+    <div id="editUserModal" class="settings-overlay">
+        <div class="settings-container">
+            <div class="settings-header">
+                <h2>Editar Usuário</h2>
+                <button class="close-settings" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="settings-content">
+                <input type="hidden" id="editUserId">
+                
+                <div class="settings-section">
+                    <div class="settings-item">
+                        <div class="settings-item-left">
+                            <h3>Nome</h3>
+                            <p>Nome do usuário</p>
+                        </div>
+                        <div class="settings-item-right">
+                            <input type="text" id="editName" class="settings-input">
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-left">
+                            <h3>Email</h3>
+                            <p>Email do usuário</p>
+                        </div>
+                        <div class="settings-item-right">
+                            <input type="email" id="editEmail" class="settings-input" disabled>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-left">
+                            <h3>Plano</h3>
+                            <p>Plano atual do usuário</p>
+                        </div>
+                        <div class="settings-item-right">
+                            <select id="editPlan" class="settings-select">
+                                <option value="free">Free</option>
+                                <option value="premium">Premium</option>
+                                <option value="enterprise">Enterprise</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-left">
+                            <h3>Admin</h3>
+                            <p>Permissões de administrador</p>
+                        </div>
+                        <div class="settings-item-right">
+                            <label class="switch">
+                                <input type="checkbox" id="editIsDev">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-left">
+                            <h3>Silenciado</h3>
+                            <p>Status de silenciamento do usuário</p>
+                        </div>
+                        <div class="settings-item-right">
+                            <label class="switch">
+                                <input type="checkbox" id="editMuted">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-item">
+                        <div class="settings-item-left">
+                            <h3>Banido</h3>
+                            <p>Status de banimento do usuário</p>
+                        </div>
+                        <div class="settings-item-right">
+                            <label class="switch">
+                                <input type="checkbox" id="editBanned">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-footer">
+                    <button class="settings-button copy-id" onclick="copyUserId()">
+                        <i class="fas fa-copy"></i>
+                        Copiar ID
+                    </button>
+                    <div class="right-buttons">
+                        <button class="settings-button cancel" onclick="closeEditModal()">Cancelar</button>
+                        <button class="settings-button save" onclick="saveUserChanges()">Salvar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Add these styles at the top of your existing style block */
+        
+        /* Fixed Navigation with Blur Effect */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.082);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Ensure main content is below header */
+        main {
+            padding-top: 80px;
+            min-height: calc(100vh - 80px);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Body glow effects */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Enable scrolling */
+        body {
+            overflow-y: auto !important;
+            overflow-x: hidden;
+            background-color: #000;
+        }
+
+        * i {
+            padding: 0;
+        }
+
+        /* Adjust existing styles to work with new layout */
+        .admin-section {
+            position: relative;
+            z-index: 2;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            position: relative;
+            width: 400px;
+        }
+
+        .admin-header h1 {
+            color: #fff;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #ff4444;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            pointer-events: none;
+            transition: color 0.3s ease;
+        }
+
+        .search-box input:focus + i {
+            color: #ff4444;
+        }
+
+        .admin-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+
+        .admin-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+        }
+
+        .admin-card.wide {
+            grid-column: 1 / -1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+        }
+
+        .stat-item i {
+            font-size: 2rem;
+            color: #4CAF50;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .users-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .user-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(5px);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .user-email {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .user-plan {
+            color: #86b877be;
+            font-weight: 500;
+        }
+
+        .action-btn {
+            padding: 0.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.mute {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+
+        .action-btn.unmute {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+        }
+
+        i.fas.fa-search {
+            padding: 0;
+        }
+
+        .action-btn.unmute:hover {
+            background: rgba(70, 244, 54, 0.2);
+        }
+        .action-btn.mute:hover {
+            background: rgba(244, 67, 54, 0.2);
+        }
+
+        .action-btn.edit {
+            background: rgba(33, 150, 243, 0.1);
+            color: #2196f3;
+        }
+
+        .action-btn.edit:hover {
+            background: rgba(33, 150, 243, 0.2);
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .pagination button {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .pagination button:disabled {
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        #userFilter, #activityFilter {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+        }
+
+        #userFilter:hover, #activityFilter:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        #userFilter:focus, #activityFilter:focus {
+            outline: none;
+            border-color: #ff4444;
+            box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
+        }
+
+        /* Style the dropdown options */
+        #userFilter option, #activityFilter option {
+            background-color: #1a1a1a;
+            color: #fff;
+            padding: 12px;
+        }
+
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .activity-filter {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(76, 175, 80, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4CAF50;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        button.refresh-btn {
+            padding: 10px;
+            color: white;
+            background: transparent;
+            border: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        button.refresh-btn:hover {
+            color: rgb(183, 255, 141);
+        }
+
+        i.fas.fa-sync-alt {
+            padding: 0;
+        }
+
+        i.fas.fa-chevron-right {
+            padding: 0;
+        }
+
+        i.fas.fa-chevron-left {
+            padding: 0;
+        }
+
+        span#pageInfo {
+            color: #fff;
+        }
+
+        .activity-text {
+            color: #fff;
+            margin: 0;
+        }
+
+        .activity-time {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .admin-section {
+                padding: 1rem;
+            }
+
+            .admin-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            #userFilter, #activityFilter {
+                width: 100%;
+            }
+            
+            .card-actions, .activity-filter {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Add these styles for activity pagination */
+        .activity-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .activity-pagination .pagination-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .activity-pagination .pagination-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .activity-pagination .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .activity-pagination .page-info {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: #888;
+        }
+
+        .no-results i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 2rem;
+            color: #ff4444;
+        }
+
+        .error-message i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Override dashboard.css pagination icon styles */
+        .activity-pagination .pagination-btn i,
+        .activity-pagination .pagination-btn:first-child i,
+        .activity-pagination .pagination-btn:last-child i {
+            margin: 0;
+        }
+
+        /* Modal Styles */
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .settings-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 800px;
+            background: #1a1a1a;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .settings-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-header h2 {
+            color: #fff;
+            margin: 0;
+        }
+
+        .close-settings {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-settings:hover {
+            color: #ff4444;
+        }
+
+        .settings-content {
+            padding: 1.5rem;
+        }
+
+        .settings-section {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            gap: 1.5rem;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .settings-item-left h3 {
+            color: #fff;
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .settings-item-left p {
+            color: #888;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .settings-input, .settings-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.8rem;
+            color: #fff;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+
+        .settings-input:focus, .settings-select:focus {
+            outline: none;
+            border-color: #ff4444;
+        }
+
+        .settings-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .settings-footer {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.2rem;
+        }
+
+        .settings-button {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .settings-button.copy-id {
+            background: #1a73e8;
+            border: none;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .settings-button.copy-id:hover {
+            background: #1557b0;
+            transform: translateY(-2px);
+        }
+
+        .settings-button.copy-id i {
+            font-size: 0.9rem;
+            padding: 0;
+        }
+
+        .settings-button.cancel {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+        }
+
+        .settings-button.save {
+            background: #ff4444;
+            border: none;
+            color: #fff;
+        }
+
+        .settings-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .settings-button.save:hover {
+            background: #ff2020;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .settings-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .settings-input, .settings-select {
+                width: 100%;
+                min-width: unset;
+            }
+        }
+
+        /* Fix toggle switch sizing and positioning */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            flex-shrink: 0; /* Prevent switch from stretching */
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #ff4444;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Fix settings item layout */
+        .settings-item-right {
+            flex-shrink: 0; /* Prevent right side from stretching */
+            display: flex;
+            align-items: center;
+        }
+
+        .settings-item-left {
+            flex-grow: 1; /* Allow left side to take available space */
+            padding-right: 1rem;
+        }
+
+        /* Dropdown/Select styling */
+        .settings-select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.8rem 2.5rem 0.8rem 1rem;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            min-width: 160px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            transition: all 0.3s ease;
+        }
+
+        .settings-select:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .settings-select:focus {
+            outline: none;
+            border-color: #ff4444;
+            box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.2);
+        }
+
+        /* Style the dropdown options */
+        .settings-select option {
+            background-color: #1a1a1a;
+            color: #fff;
+            padding: 12px;
+        }
+    </style>
+
+    <script>
+        // Remove Firebase config and initialization since it's in script.js
+        
+        // Pagination variables
+        let currentPage = 1;
+        const usersPerPage = 10;
+        let totalUsers = 0;
+
+        // Activity variables
+        let activityCurrentPage = 1;
+        const activitiesPerPage = 15;
+        let totalActivities = 0;
+
+        // Update the loadActivity function
+        let lastVisibleActivity = null;
+        let firstVisibleActivity = null;
+        let activityCache = [];
+
+        // Check if user is admin
+        auth.onAuthStateChanged(async function(user) {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (!doc.exists || !doc.data().isDev) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Initialize admin panel
+            loadUserStats();
+            loadUsers();
+            loadActivity();
+        });
+
+        // Load user statistics
+        async function loadUserStats() {
+            const usersSnapshot = await db.collection('users').get();
+            const users = usersSnapshot.docs.map(doc => doc.data());
+            
+            document.getElementById('totalUsers').textContent = users.length;
+            document.getElementById('activeUsers').textContent = 
+                users.filter(user => user.lastActive > Date.now() - (30 * 24 * 60 * 60 * 1000)).length;
+            document.getElementById('premiumUsers').textContent = 
+                users.filter(user => user.plan === 'premium' || user.plan === 'enterprise').length;
+        }
+
+        // Load users list
+        async function loadUsers() {
+            const usersList = document.getElementById('usersList');
+            const filter = document.getElementById('userFilter').value;
+            
+            let query = db.collection('users');
+            
+            // Apply filters
+            switch(filter) {
+                case 'active':
+                    query = query.where('lastActive', '>', Date.now() - (30 * 24 * 60 * 60 * 1000));
+                    break;
+                case 'premium':
+                    // Use 'in' operator to match both premium and enterprise plans
+                    query = query.where('plan', 'in', ['premium', 'enterprise']);
+                    break;
+                case 'muted':
+                    query = query.where('muted', '==', true);
+                    break;
+            }
+            
+            const snapshot = await query.get();
+            totalUsers = snapshot.docs.length;
+            
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * usersPerPage;
+            const endIndex = startIndex + usersPerPage;
+            const paginatedUsers = snapshot.docs.slice(startIndex, endIndex);
+            
+            usersList.innerHTML = '';
+            
+            if (paginatedUsers.length === 0) {
+                usersList.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-users"></i>
+                        <p>Nenhum usuário encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            paginatedUsers.forEach(doc => {
+                const userData = doc.data();
+                // Capitalize the first letter of the plan
+                const planDisplay = userData.plan ? 
+                    userData.plan.charAt(0).toUpperCase() + userData.plan.slice(1) : 
+                    'Free';
+                
+                usersList.innerHTML += `
+                    <div class="user-item">
+                        <div class="user-info">
+                            <img src="${userData.profilePicture || 'https://ui-avatars.com/api/?name=' + userData.name}" 
+                                 alt="Avatar" 
+                                 class="user-avatar">
+                            <div class="user-details">
+                                <span class="user-name">${userData.name}</span>
+                                <span class="user-email">${userData.email}</span>
+                                <span class="user-plan">${planDisplay}</span>
+                            </div>
+                        </div>
+                        <div class="user-actions">
+                            <button class="action-btn ${userData.muted ? 'unmute' : 'mute'}" onclick="toggleMute('${doc.id}', ${!userData.muted})">
+                                <i class="fas fa-${userData.muted ? 'microphone' : 'microphone-slash'}"></i>
+                            </button>
+                            <button class="action-btn edit" onclick="editUser('${doc.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Update pagination buttons
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = endIndex >= totalUsers;
+            document.getElementById('pageInfo').textContent = `Página ${currentPage}`;
+        }
+
+        // Load activity list
+        async function loadActivity() {
+            const activityList = document.getElementById('adminActivityList');
+            const filter = document.getElementById('activityFilter').value;
+            
+            try {
+                // Get total count first
+                const countSnapshot = await db.collection('admin_activity')
+                    .where('type', filter === 'all' ? '!=' : '==', filter)
+                    .get();
+                
+                totalActivities = countSnapshot.docs.length;
+
+                // Base query
+                let query = db.collection('admin_activity')
+                    .orderBy('timestamp', 'desc');
+
+                if (filter !== 'all') {
+                    query = query.where('type', '==', filter);
+                }
+
+                // Apply pagination
+                if (activityCurrentPage > 1 && lastVisibleActivity) {
+                    query = query.startAfter(lastVisibleActivity);
+                }
+
+                const snapshot = await query.limit(activitiesPerPage).get();
+                
+                if (snapshot.empty && activityCurrentPage > 1) {
+                    activityCurrentPage--;
+                    loadActivity();
+                    return;
+                }
+
+                activityList.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    activityList.innerHTML = `
+                        <div class="no-results">
+                            <i class="fas fa-history"></i>
+                            <p>Nenhuma atividade encontrada</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Store first and last visible documents
+                firstVisibleActivity = snapshot.docs[0];
+                lastVisibleActivity = snapshot.docs[snapshot.docs.length - 1];
+
+                // Cache the current page
+                activityCache[activityCurrentPage] = {
+                    firstVisible: firstVisibleActivity,
+                    lastVisible: lastVisibleActivity,
+                    docs: snapshot.docs
+                };
+
+                snapshot.docs.forEach(doc => {
+                    const activity = doc.data();
+                    activityList.innerHTML += `
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas ${getActivityIcon(activity.type)}"></i>
+                            </div>
+                            <div class="activity-details">
+                                <p class="activity-text">${activity.description}</p>
+                                <span class="activity-time">${new Date(activity.timestamp).toLocaleString('pt-BR')}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Update pagination info
+                updateActivityPagination();
+
+            } catch (error) {
+                console.error('Error loading activities:', error);
+                activityList.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Erro ao carregar atividades</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Helper function to get activity icon
+        function getActivityIcon(type) {
+            switch(type) {
+                case 'login': return 'fa-sign-in-alt';
+                case 'mute': return 'fa-microphone-slash';
+                case 'premium': return 'fa-crown';
+                default: return 'fa-info-circle';
+            }
+        }
+
+        // Pagination functions
+        function nextPage() {
+            currentPage++;
+            loadUsers();
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadUsers();
+            }
+        }
+
+        // Update pagination functions
+        async function nextActivityPage() {
+            const maxPages = Math.ceil(totalActivities / activitiesPerPage);
+            if (activityCurrentPage < maxPages) {
+                activityCurrentPage++;
+                
+                // Check if we have cached data
+                if (activityCache[activityCurrentPage]) {
+                    lastVisibleActivity = activityCache[activityCurrentPage].lastVisible;
+                    firstVisibleActivity = activityCache[activityCurrentPage].firstVisible;
+                }
+                
+                await loadActivity();
+            }
+        }
+
+        async function previousActivityPage() {
+            if (activityCurrentPage > 1) {
+                activityCurrentPage--;
+                
+                // Check if we have cached data
+                if (activityCache[activityCurrentPage]) {
+                    lastVisibleActivity = activityCache[activityCurrentPage].lastVisible;
+                    firstVisibleActivity = activityCache[activityCurrentPage].firstVisible;
+                } else {
+                    // Reset to beginning and paginate forward
+                    lastVisibleActivity = null;
+                    firstVisibleActivity = null;
+                    let currentPage = 1;
+                    while (currentPage < activityCurrentPage) {
+                        const query = db.collection('admin_activity')
+                            .orderBy('timestamp', 'desc')
+                            .limit(activitiesPerPage);
+                        
+                        if (lastVisibleActivity) {
+                            query = query.startAfter(lastVisibleActivity);
+                        }
+                        
+                        const snapshot = await query.get();
+                        lastVisibleActivity = snapshot.docs[snapshot.docs.length - 1];
+                        currentPage++;
+                    }
+                }
+                
+                await loadActivity();
+            }
+        }
+
+        function updateActivityPagination() {
+            const maxPages = Math.ceil(totalActivities / activitiesPerPage);
+            const paginationInfo = document.getElementById('activityPageInfo');
+            const prevBtn = document.getElementById('prevActivityBtn');
+            const nextBtn = document.getElementById('nextActivityBtn');
+
+            if (paginationInfo) {
+                paginationInfo.textContent = `Página ${activityCurrentPage} de ${maxPages}`;
+            }
+
+            if (prevBtn) {
+                prevBtn.disabled = activityCurrentPage === 1;
+            }
+
+            if (nextBtn) {
+                nextBtn.disabled = activityCurrentPage >= maxPages;
+            }
+        }
+
+        // User actions
+        async function toggleMute(userId, mute) {
+            try {
+                await db.collection('users').doc(userId).update({
+                    muted: mute,
+                    muteTimestamp: mute ? Date.now() : null
+                });
+                
+                // Log admin activity
+                await db.collection('admin_activity').add({
+                    type: 'mute',
+                    description: `User ${userId} was ${mute ? 'muted' : 'unmuted'}`,
+                    timestamp: Date.now(),
+                    adminId: auth.currentUser.uid
+                });
+                
+                loadUsers();
+                loadActivity();
+            } catch (error) {
+                console.error('Error toggling mute:', error);
+                alert('Error toggling mute status');
+            }
+        }
+
+        async function editUser(userId) {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                console.error('User not found');
+                return;
+            }
+
+            const userData = userDoc.data();
+            
+            // Populate modal fields
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('editName').value = userData.name || '';
+            document.getElementById('editEmail').value = userData.email || '';
+            document.getElementById('editPlan').value = userData.plan || 'free';
+            document.getElementById('editIsDev').checked = userData.isDev || false;
+            document.getElementById('editMuted').checked = userData.muted || false;
+            document.getElementById('editBanned').checked = userData.Banned || false;
+
+            // Show modal
+            document.getElementById('editUserModal').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+        }
+
+        async function saveUserChanges() {
+            const userId = document.getElementById('editUserId').value;
+            const newData = {
+                name: document.getElementById('editName').value,
+                plan: document.getElementById('editPlan').value,
+                isDev: document.getElementById('editIsDev').checked,
+                muted: document.getElementById('editMuted').checked,
+                Banned: document.getElementById('editBanned').checked
+            };
+
+            try {
+                await db.collection('users').doc(userId).update(newData);
+                
+                // Log admin activity
+                await db.collection('admin_activity').add({
+                    type: 'user_edit',
+                    description: `User ${userId} was edited`,
+                    timestamp: Date.now(),
+                    adminId: auth.currentUser.uid,
+                    changes: newData
+                });
+
+                closeEditModal();
+                loadUsers(); // Refresh the users list
+                
+                // Show success message
+                showToast('Usuário atualizado com sucesso!', 'success');
+            } catch (error) {
+                console.error('Error updating user:', error);
+                showToast('Erro ao atualizar usuário', 'error');
+            }
+        }
+
+        // Add toast notification function if not already present
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editUserModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('userFilter').addEventListener('change', () => {
+            currentPage = 1;
+            loadUsers();
+        });
+
+        document.getElementById('activityFilter').addEventListener('change', () => {
+            activityCurrentPage = 1;
+            lastVisibleActivity = null;
+            firstVisibleActivity = null;
+            activityCache = [];
+            loadActivity();
+        });
+
+        document.getElementById('userSearch').addEventListener('input', debounce(function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            currentPage = 1; // Reset to first page when searching
+            loadUsers(searchTerm);
+        }, 300));
+
+        // Utility function for debouncing
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Refresh stats
+        function refreshUserStats() {
+            loadUserStats();
+            loadUsers();
+            loadActivity();
+        }
+
+        // Add copy function
+        async function copyUserId() {
+            const userId = document.getElementById('editUserId').value;
+            try {
+                await navigator.clipboard.writeText(userId);
+                showToast('ID copiado com sucesso!', 'success');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                showToast('Erro ao copiar ID', 'error');
+            }
+        }
+    </script>
+</body>
+</html> 

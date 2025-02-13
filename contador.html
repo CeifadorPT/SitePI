@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contador - Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Add Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="#" class="active">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <section class="counter-section">
+            <div class="counter-grid">
+                <div class="voltage-card">
+                    <h2>Tensão Atual</h2>
+                    <div class="voltage-display">
+                        <div class="voltage-ring">
+                            <svg class="progress-ring" width="180" height="180">
+                                <circle class="progress-ring-circle-bg" cx="90" cy="90" r="80" />
+                                <circle class="progress-ring-circle" cx="90" cy="90" r="80" />
+                            </svg>
+                            <div class="voltage-content">
+                                <span class="voltage-value">N/A</span>
+                                <span class="voltage-unit">V</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="voltage-status">Normal</div>
+                    <div class="control-buttons">
+                        <button class="start-btn">
+                            <i class="fas fa-power-off"></i>
+                            <span>Iniciar</span>
+                        </button>
+                        <button class="socket-btn" onclick="showSocketSelection()">
+                            <i class="fas fa-plug"></i>
+                            <span>Tomada</span>
+                        </button>
+                        <button class="save-btn" onclick="saveCurrentReading()">
+                            <i class="fas fa-save"></i>
+                            <span>Salvar</span>
+                        </button>
+                        <button class="history-btn" onclick="showReadingHistory()">
+                            <i class="fas fa-history"></i>
+                            <span>Histórico</span>
+                        </button>
+                        <button class="share-btn" onclick="shareReadings()">
+                            <i class="fas fa-share-alt"></i>
+                            <span>Compartilhar</span>
+                        </button>
+                    </div>
+                    <div class="spacer"></div>
+                    <div class="current-socket-info">
+                        <span>Tomada atual: </span>
+                        <span class="current-socket-name">...</span>
+                    </div>
+                </div>
+                <div class="graph-card">
+                    <div class="graph-header">
+                        <h2>Consumo de Energia</h2>
+                        <div class="time-filters">
+                            <button class="time-btn active">30S</button>
+                            <button class="time-btn">1M</button>
+                            <button class="time-btn">5M</button>
+                        </div>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="voltageGraph"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div id="container">
+            <div class="square"></div>
+            <div class="square"></div>
+            <div class="square"></div>
+            <div class="square"></div>
+        </div>
+    </main>
+
+    <script>
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Graph initialization - Add this before the other code
+        const ctx = document.getElementById('voltageGraph').getContext('2d');
+        const voltageGraph = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 30}, () => ''),  // 30 seconds of data
+                datasets: [{
+                    label: 'Tensão (V)',
+                    data: Array.from({length: 30}, () => 220),  // Start with baseline voltage
+                    borderColor: 'rgba(255, 0, 0, 0.5)',
+                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 0  // Disable animations for better performance
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 180,  // Set minimum voltage
+                        max: 260,  // Set maximum voltage
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#888'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#888',
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 6
+                        }
+                    }
+                }
+            }
+        });
+
+        // Replace the simple auth check with this
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (!user) {
+                showAuthPopup();
+            }
+        });
+
+        // Add this function
+        function showAuthPopup() {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2>Acesso Restrito</h2>
+                    <p>Por favor, faça login para acessar esta página.</p>
+                    <button onclick="window.location.href='index.html'" class="auth-popup-button">OK</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        // Update the saveReading function to check plan limits
+        function saveReading(voltage) {
+            const user = auth.currentUser;
+            const socketId = sessionStorage.getItem('currentSocket');
+            
+            if (!user || !socketId) {
+                showToast('Selecione uma tomada primeiro', 'error');
+                return;
+            }
+
+            const reading = {
+                voltage: voltage,
+                timestamp: new Date().getTime(),
+                socketId: socketId,
+                sharedBy: user.uid,
+                sharedByEmail: user.email
+            };
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const sockets = data.sockets || [];
+                    const socketIndex = sockets.findIndex(s => s.id === socketId);
+                    
+                    if (socketIndex === -1) {
+                        showToast('Tomada não encontrada', 'error');
+                        return;
+                    }
+
+                    // Update socket stats
+                    sockets[socketIndex].lastReading = voltage;
+                    sockets[socketIndex].readings = (sockets[socketIndex].readings || 0) + 1;
+                    sockets[socketIndex].active = true;
+                    
+                    // Save reading to user's readings
+                    const savePromises = [
+                        db.collection('users').doc(user.uid).update({
+                            readings: firebase.firestore.FieldValue.arrayUnion(reading),
+                            sockets: sockets,
+                            lastReading: reading
+                        })
+                    ];
+
+                    // Share reading with shared users
+                    const sharedWith = data.sharedWith || [];
+                    const acceptedShares = sharedWith.filter(share => share.status === 'accepted');
+                    
+                    acceptedShares.forEach(share => {
+                        const sharedReading = {
+                            ...reading,
+                            source: 'shared',
+                            sharedBy: user.uid,
+                            sharedByEmail: user.email
+                        };
+
+                        savePromises.push(
+                            db.collection('users').doc(share.userId).update({
+                                sharedReadings: firebase.firestore.FieldValue.arrayUnion(sharedReading)
+                            })
+                        );
+                    });
+
+                    return Promise.all(savePromises);
+                }
+            }).catch(error => {
+                console.error("Error saving reading:", error);
+                showToast('Erro ao salvar leitura', 'error');
+            });
+        }
+
+        // Add this function to show readings remaining
+        function updateReadingsRemaining() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const currentPlan = data.plan || 'basic';
+                    const readingsToday = data.readingsToday || 0;
+
+                    if (currentPlan.toLowerCase() === 'basic') {
+                        const remaining = 200 - readingsToday;
+                        document.querySelector('.voltage-status').innerHTML += 
+                            `<br><span class="readings-remaining">${remaining} leituras restantes</span>`;
+                    }
+                }
+            });
+        }
+
+        // Add these variables at the start of your script
+        let isReading = false;
+        let readingInterval;
+        const voltageValue = document.querySelector('.voltage-value');
+        const voltageStatus = document.querySelector('.voltage-status');
+        const progressRing = document.querySelector('.progress-ring-circle');
+        const radius = progressRing.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        
+        // Set initial progress ring state
+        progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressRing.style.strokeDashoffset = circumference;
+
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100) * circumference;
+            progressRing.style.strokeDashoffset = offset;
+        }
+
+        function updateVoltageStatus(value) {
+            let statusText = '';
+            if (value < 200) {
+                statusText = 'Baixa';
+                voltageStatus.className = 'voltage-status low';
+                progressRing.style.stroke = '#ff4444';
+            } else if (value > 240) {
+                statusText = 'Alta';
+                voltageStatus.className = 'voltage-status high';
+                progressRing.style.stroke = '#ff4444';
+            } else {
+                statusText = 'Normal';
+                voltageStatus.className = 'voltage-status normal';
+                progressRing.style.stroke = '#4CAF50';
+            }
+
+            // Get remaining readings and update status
+            const user = firebase.auth().currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const currentPlan = data.plan || 'basic';
+                        const readingsToday = data.readingsToday || 0;
+
+                        if (currentPlan.toLowerCase() === 'basic') {
+                            const remaining = 200 - readingsToday;
+                            voltageStatus.innerHTML = `${statusText}<br><span class="readings-remaining">${remaining} leituras restantes</span>`;
+                        } else {
+                            voltageStatus.textContent = statusText;
+                        }
+                    }
+                });
+            } else {
+                voltageStatus.textContent = statusText;
+            }
+        }
+
+        // Update the updateGraphTimeRange function
+        function updateGraphTimeRange(seconds) {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            // Get readings from Firestore
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    let readings = data.readings || [];
+                    
+                    // Sort readings by timestamp
+                    readings.sort((a, b) => a.timestamp - b.timestamp);
+                    
+                    // Get readings within the time window
+                    const now = new Date().getTime();
+                    const timeWindow = seconds * 1000; // Convert seconds to milliseconds
+                    readings = readings.filter(r => (now - r.timestamp) <= timeWindow);
+                    
+                    // If we have fewer readings than needed, pad with baseline voltage
+                    const padding = seconds - readings.length;
+                    if (padding > 0) {
+                        const paddingData = Array.from({ length: padding }, () => ({
+                            voltage: 220,
+                            timestamp: null
+                        }));
+                        readings = [...paddingData, ...readings];
+                    }
+                    
+                    // Update graph data
+                    voltageGraph.data.labels = readings.map(r => 
+                        r.timestamp ? new Date(r.timestamp).toLocaleTimeString() : ''
+                    );
+                    voltageGraph.data.datasets[0].data = readings.map(r => r.voltage);
+                    
+                    // Update x-axis settings
+                    voltageGraph.options.scales.x.ticks.maxTicksLimit = Math.min(6, seconds);
+                    
+                    voltageGraph.update();
+                }
+            }).catch(error => {
+                console.error("Error fetching readings:", error);
+            });
+        }
+
+        // Update simulateReading function to include sharing
+        function simulateReading() {
+            const socketId = sessionStorage.getItem('currentSocket');
+            if (!socketId) {
+                showToast('Selecione uma tomada primeiro', 'error');
+                stopReading();
+                return;
+            }
+
+            // Check if socket is still enabled
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const sockets = doc.data().sockets || [];
+                    const socket = sockets.find(s => s.id === socketId);
+                    
+                    if (!socket || socket.enabled === false) {
+                        showToast('Esta tomada está desativada', 'error');
+                        stopReading();
+                        sessionStorage.removeItem('currentSocket');
+                        document.querySelector('.current-socket-name').textContent = 'Nenhuma selecionada';
+                        return;
+                    }
+
+                    // Continue with reading if socket is enabled
+                    const baseVoltage = 220;
+                    const variation = Math.sin(Date.now() / 1000) * 30;
+                    const noise = (Math.random() - 0.5) * 10;
+                    const reading = Math.round(baseVoltage + variation + noise);
+
+                    // Update display
+                    voltageValue.textContent = reading;
+                    setProgress((reading / 300) * 100);
+                    updateVoltageStatus(reading);
+
+                    // Update graph
+                    const activeTimeBtn = document.querySelector('.time-filters .time-btn.active');
+                    const timeRange = activeTimeBtn.textContent.trim();
+                    let seconds;
+                    switch(timeRange) {
+                        case '30S': seconds = 30; break;
+                        case '1M': seconds = 60; break;
+                        case '5M': seconds = 300; break;
+                        default: seconds = 30;
+                    }
+
+                    const labels = voltageGraph.data.labels;
+                    const data = voltageGraph.data.datasets[0].data;
+                    
+                    while (labels.length >= seconds) {
+                        labels.shift();
+                        data.shift();
+                    }
+                    
+                    labels.push(new Date().toLocaleTimeString());
+                    data.push(reading);
+                    
+                    voltageGraph.update();
+
+                    // Handle readings count and saving
+                    const currentPlan = doc.data().plan || 'basic';
+                    const readingsToday = doc.data().readingsToday || 0;
+                    const autoSaveEnabled = doc.data().settings?.autoSave !== false;
+
+                    if (currentPlan.toLowerCase() === 'basic') {
+                        db.collection('users').doc(user.uid).update({
+                            readingsToday: firebase.firestore.FieldValue.increment(1)
+                        });
+                    }
+
+                    if (autoSaveEnabled) {
+                        saveReading(reading);
+                    }
+
+                    if (currentPlan.toLowerCase() === 'basic') {
+                        const remaining = 200 - (readingsToday + 1);
+                        document.querySelector('.voltage-status').innerHTML = 
+                            `${getVoltageStatus(reading)}<br><span class="readings-remaining">${remaining} leituras restantes</span>`;
+                    } else {
+                        
+                    }
+                }
+            }).catch(error => {
+                console.error("Error checking socket status:", error);
+                stopReading();
+            });
+        }
+
+        // Add helper function to stop reading
+        function stopReading() {
+            clearInterval(readingInterval);
+            isReading = false;
+            document.querySelector('.start-btn').classList.remove('active');
+            document.querySelector('.start-btn span').textContent = 'Iniciar';
+        }
+
+        // Update the start button click handler
+        document.querySelector('.start-btn').addEventListener('click', function() {
+            const socketId = sessionStorage.getItem('currentSocket');
+            if (!socketId) {
+                showToast('Selecione uma tomada primeiro', 'error');
+                return;
+            }
+
+            if (!isReading) {
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    // Check if socket is enabled before starting
+                    db.collection('users').doc(user.uid).get().then(doc => {
+                        if (doc.exists) {
+                            const sockets = doc.data().sockets || [];
+                            const socket = sockets.find(s => s.id === socketId);
+                            
+                            if (!socket || socket.enabled === false) {
+                                showToast('Esta tomada está desativada', 'error');
+                                sessionStorage.removeItem('currentSocket');
+                                document.querySelector('.current-socket-name').textContent = 'Nenhuma selecionada';
+                                return;
+                            }
+
+                            const data = doc.data();
+                            const currentPlan = data.plan || 'basic';
+                            const readingsToday = data.readingsToday || 0;
+                            const interval = (data.settings?.autoSaveInterval || 1) * 1000;
+
+                            if (currentPlan.toLowerCase() === 'basic' && readingsToday >= 200) {
+                                showToast('Limite diário de 200 leituras atingido. Faça upgrade para o plano Premium para leituras ilimitadas!', 'info');
+                                window.location.href = 'plans.html';
+                                return;
+                            }
+
+                            isReading = true;
+                            this.classList.add('active');
+                            this.querySelector('span').textContent = 'Parar';
+                            readingInterval = setInterval(simulateReading, interval);
+                        }
+                    });
+                }
+            } else {
+                stopReading();
+            }
+        });
+
+        document.querySelector('.pause-btn').addEventListener('click', function() {
+            if (isReading) {
+                isReading = false;
+                this.classList.add('active');
+                document.querySelector('.start-btn').classList.remove('active');
+                
+                // Stop readings
+                stopReading();
+                
+                // Update start button text
+                document.querySelector('.start-btn span').textContent = 'Iniciar';
+            }
+        });
+
+        // Update time filter buttons click handlers
+        document.querySelectorAll('.time-filters .time-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.time-filters .time-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                // Get time range from button text
+                const timeRange = this.textContent.trim();
+                let seconds;
+                
+                switch(timeRange) {
+                    case '30S':
+                        seconds = 30;
+                        break;
+                    case '1M':
+                        seconds = 60;
+                        break;
+                    case '5M':
+                        seconds = 300;  // Changed from 600 to 300 for 5 minutes
+                        break;
+                    case '...':
+                        seconds = 600;  // Default for ... button
+                        break;
+                    default:
+                        seconds = 30;
+                }
+                
+                updateGraphTimeRange(seconds);
+            });
+        });
+
+        // Add this after Firebase initialization
+        function shareReadings() {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup share-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-share-alt"></i>
+                    </div>
+                    <h2>Compartilhar Leituras</h2>
+                    <div class="share-options">
+                        <div class="share-input-group">
+                            <input type="email" id="shareEmail" placeholder="Email do usuário">
+                            <button onclick="addSharedUser()" class="share-btn">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div id="sharedUsersList" class="shared-users-list">
+                            <h3>Usuários com Acesso</h3>
+                            <!-- Shared users will be listed here -->
+                        </div>
+                    </div>
+                    <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">Fechar</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            loadSharedUsers();
+        }
+
+        function addSharedUser() {
+            const email = document.getElementById('shareEmail').value.trim();
+            if (!email) {
+                showToast('Digite um email para compartilhar', 'error');
+                return;
+            }
+
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            // Check if already shared with this email
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const data = doc.data();
+                const sharedWith = data.sharedWith || [];
+                
+                // Check if already shared (pending or accepted)
+                const alreadyShared = sharedWith.some(share => share.email === email);
+                
+                if (alreadyShared) {
+                    showToast('Já compartilhado com este usuário', 'info');
+                    return;
+                }
+
+                // Continue with sharing process
+                db.collection('users').where('email', '==', email).get()
+                    .then(snapshot => {
+                        if (snapshot.empty) {
+                            showToast('Usuário não encontrado', 'error');
+                            return;
+                        }
+
+                        const sharedUser = snapshot.docs[0];
+                        const sharedUserId = sharedUser.id;
+
+                        // Add to current user's sharedWith array with pending status
+                        const sharedWithPromise = db.collection('users').doc(user.uid).update({
+                            sharedWith: firebase.firestore.FieldValue.arrayUnion({
+                                userId: sharedUserId,
+                                email: email,
+                                status: 'pending'
+                            })
+                        });
+
+                        // Create notification for target user
+                        const notificationPromise = db.collection('users').doc(sharedUserId).update({
+                            notifications: firebase.firestore.FieldValue.arrayUnion({
+                                type: 'share_request',
+                                from: user.email,
+                                fromId: user.uid,
+                                timestamp: new Date().getTime(),
+                                status: 'pending'
+                            })
+                        });
+
+                        return Promise.all([sharedWithPromise, notificationPromise]);
+                    })
+                    .then(() => {
+                        document.getElementById('shareEmail').value = '';
+                        showToast('Solicitação de compartilhamento enviada', 'success');
+                        loadSharedUsers();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Erro ao compartilhar: ' + error.message, 'error');
+                    });
+            });
+        }
+
+        function removeSharedUser(sharedUserId) {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get()
+                .then(doc => {
+                    const data = doc.data();
+                    const sharedWith = data.sharedWith || [];
+                    const shareToRemove = sharedWith.find(share => share.userId === sharedUserId);
+                    
+                    if (!shareToRemove) return;
+
+                    // Remove from current user's sharedWith array
+                    const updatedSharedWith = sharedWith.filter(share => share.userId !== sharedUserId);
+                    
+                    const promises = [
+                        db.collection('users').doc(user.uid).update({
+                            sharedWith: updatedSharedWith
+                        })
+                    ];
+
+                    // If the share was pending, also remove the notification from the target user
+                    if (shareToRemove.status === 'pending') {
+                        promises.push(
+                            db.collection('users').doc(sharedUserId).get().then(targetDoc => {
+                                const targetData = targetDoc.data();
+                                const notifications = targetData.notifications || [];
+                                
+                                // Filter out the pending share request notification
+                                const updatedNotifications = notifications.filter(notif => 
+                                    !(notif.fromId === user.uid && notif.type === 'share_request')
+                                );
+
+                                return db.collection('users').doc(sharedUserId).update({
+                                    notifications: updatedNotifications
+                                });
+                            })
+                        );
+                    }
+
+                    return Promise.all(promises);
+                })
+                .then(() => {
+                    loadSharedUsers();
+                    showToast('Compartilhamento removido com sucesso', 'success');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Erro ao remover compartilhamento', 'error');
+                });
+        }
+
+        function loadSharedUsers() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const sharedList = document.getElementById('sharedUsersList');
+            if (!sharedList) return;
+
+            db.collection('users').doc(user.uid).get()
+                .then(doc => {
+                    const data = doc.data();
+                    const sharedWith = data.sharedWith || [];
+                    
+                    let html = '<h3>Usuários com Acesso</h3>';
+                    if (sharedWith.length === 0) {
+                        html += '<p class="no-shared">Nenhum usuário compartilhado</p>';
+                    } else {
+                        sharedWith.forEach(share => {
+                            const isPending = share.status === 'pending';
+                            const statusText = isPending ? 'Pendente' : 'Aceito';
+                            const statusClass = isPending ? 'pending' : 'accepted';
+                            html += `
+                                <div class="shared-user-item ${statusClass}">
+                                    <span class="shared-user-email">
+                                        ${share.email}
+                                        <span class="status-badge ${statusClass}">${statusText}</span>
+                                    </span>
+                                    <button onclick="removeSharedUser('${share.userId}')" class="remove-share-btn">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            `;
+                        });
+                    }
+                    sharedList.innerHTML = html;
+                });
+        }
+
+        // Add this function to handle share request responses
+        function handleShareRequest(action, fromUserId) {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            // Update notification status in current user's notifications
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const data = doc.data();
+                const notifications = data.notifications || [];
+                const updatedNotifications = notifications.map(notif => {
+                    if (notif.fromId === fromUserId && notif.type === 'share_request') {
+                        return { ...notif, status: action };
+                    }
+                    return notif;
+                });
+
+                // Update sharing status in sender's sharedWith array
+                const senderPromise = db.collection('users').doc(fromUserId).get().then(senderDoc => {
+                    const senderData = senderDoc.data();
+                    const sharedWith = senderData.sharedWith || [];
+                    const updatedSharedWith = sharedWith.map(share => {
+                        if (share.userId === user.uid) {
+                            return { ...share, status: action };
+                        }
+                        return share;
+                    });
+
+                    return db.collection('users').doc(fromUserId).update({
+                        sharedWith: updatedSharedWith
+                    });
+                });
+
+                // Update current user's notifications
+                const notificationPromise = db.collection('users').doc(user.uid).update({
+                    notifications: updatedNotifications
+                });
+
+                return Promise.all([senderPromise, notificationPromise]);
+            }).then(() => {
+                // Show success message
+                const message = action === 'accept' ? 
+                    'Compartilhamento aceito com sucesso!' : 
+                    'Compartilhamento rejeitado';
+                showNotification('Sucesso', message, 'success');
+                
+                // Update notifications display
+                updateNotifications();
+            }).catch(error => {
+                console.error('Error handling share request:', error);
+                showNotification('Erro', 'Erro ao processar solicitação', 'error');
+            });
+        }
+
+        // Add this function to handle socket selection
+        function showSocketSelection() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const currentSocketId = sessionStorage.getItem('currentSocket'); // Get current socket ID
+
+            const popup = document.createElement('div');
+            popup.className = 'settings-modal-overlay';
+            popup.innerHTML = `
+                <div class="settings-modal">
+                    <div class="settings-header">
+                        <h2>Selecionar Tomada</h2>
+                        <button class="close-btn" onclick="this.closest('.settings-modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="settings-content">
+                        <div class="settings-section socket-selection">
+                            <!-- Sockets will be populated here -->
+                        </div>
+                    </div>
+                    <div class="settings-footer">
+                        <button class="settings-button cancel" onclick="this.closest('.settings-modal-overlay').remove()">Fechar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+
+            // Load and display sockets
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const sockets = data.sockets || [];
+                    const socketList = popup.querySelector('.socket-selection');
+                    
+                    if (sockets.length === 0) {
+                        socketList.innerHTML = `
+                            <p style="color: #888; text-align: center;">
+                                Nenhuma tomada cadastrada. 
+                                <a href="sockets.html" style="color: #4CAF50;">Adicionar tomada</a>
+                            </p>`;
+                        return;
+                    }
+
+                    socketList.innerHTML = sockets.map(socket => {
+                        const isEnabled = socket.enabled !== false;
+                        const isCurrent = socket.id === currentSocketId; // Compare with current socket ID
+                        let statusClass, statusText;
+
+                        if (!isEnabled) {
+                            statusClass = 'disabled';
+                            statusText = 'Desativada';
+                        } else if (socket.active) {
+                            statusClass = 'active';
+                            statusText = 'Ativo';
+                        } else {
+                            statusClass = 'inactive';
+                            statusText = 'Inativo';
+                        }
+
+                        return `
+                            <div class="socket-option ${!isEnabled ? 'disabled' : ''} ${isCurrent ? 'current' : ''}" 
+                                 onclick="${isEnabled ? `selectSocket('${socket.id}', '${socket.name}')` : ''}"
+                                 style="${!isEnabled ? 'cursor: not-allowed;' : ''}">
+                                <div class="socket-option-content">
+                                    <div class="socket-option-name">
+                                        <div class="socket-icon">
+                                            <i class="fas fa-${socket.icon || 'lightbulb'}"></i>
+                                        </div>
+                                        <span>${socket.name}</span>
+                                        ${socket.schedule?.enabled ? 
+                                            `<span style="color: #888; font-size: 0.8rem;"> (${socket.schedule.start} - ${socket.schedule.end})</span>` 
+                                            : ''}
+                                    </div>
+                                    <div class="socket-option-info">${socket.description || 'Sem descrição'}</div>
+                                </div>
+                                <div class="socket-option-status ${statusClass}">
+                                    ${statusText}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            });
+        }
+
+        // Update selectSocket to check if socket is enabled before selecting
+        function selectSocket(socketId, socketName) {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const sockets = doc.data().sockets || [];
+                    const socket = sockets.find(s => s.id === socketId);
+                    
+                    if (!socket || socket.enabled === false) {
+                        showToast('Esta tomada está desativada', 'error');
+                        return;
+                    }
+
+                    sessionStorage.setItem('currentSocket', socketId);
+                    document.querySelector('.current-socket-name').textContent = socketName;
+                    document.querySelector('.settings-modal-overlay').remove();
+                    showToast('Tomada selecionada com sucesso', 'success');
+                }
+            });
+        }
+
+        // Add this function to handle real-time socket updates
+        function setupSocketNameUpdates() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            // Listen for changes to the user's document
+            db.collection('users').doc(user.uid)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const socketId = sessionStorage.getItem('currentSocket');
+                        if (socketId) {
+                            const sockets = doc.data().sockets || [];
+                            const socket = sockets.find(s => s.id === socketId);
+                            if (socket) {
+                                document.querySelector('.current-socket-name').textContent = socket.name;
+                            } else {
+                                document.querySelector('.current-socket-name').textContent = 'Tomada removida';
+                            }
+                        }
+                    }
+                });
+        }
+
+        // Update the initialization code
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                firebase.auth().onAuthStateChanged(function(user) {
+                    if (user) {
+                        loadCurrentSocket();
+                        setupSocketNameUpdates();
+                    }
+                });
+            } else {
+                loadCurrentSocket();
+                setupSocketNameUpdates();
+            }
+        });
+
+        // Update loadCurrentSocket to use the same name update logic
+        function loadCurrentSocket() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const currentSocket = data.currentSocket;
+                    
+                    if (currentSocket) {
+                        sessionStorage.setItem('currentSocket', currentSocket.id);
+                        document.querySelector('.current-socket-name').textContent = currentSocket.name;
+                    } else {
+                        // Check sessionStorage as fallback
+                        const socketId = sessionStorage.getItem('currentSocket');
+                        if (socketId) {
+                            const sockets = data.sockets || [];
+                            const socket = sockets.find(s => s.id === socketId);
+                            if (socket) {
+                                document.querySelector('.current-socket-name').textContent = socket.name;
+                            } else {
+                                document.querySelector('.current-socket-name').textContent = 'Nenhuma selecionada';
+                            }
+                        }
+                    }
+                }
+            }).catch(error => {
+                console.error("Error loading current socket:", error);
+            });
+        }
+
+        function showReadingDetails(timestamp) {
+            const reading = allReadings.find(r => r.timestamp === timestamp);
+            if (!reading) return;
+
+            // Get socket name from the reading's socketId
+            let socketName = "Desconhecido";
+            const user = auth.currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        const sockets = doc.data().sockets || [];
+                        const socket = sockets.find(s => s.id === reading.socketId);
+                        socketName = socket ? socket.name : "Tomada removida";
+                        
+                        const popup = document.createElement('div');
+                        popup.className = 'auth-popup-overlay';
+                        popup.innerHTML = `
+                            <div class="auth-popup">
+                                <div class="auth-popup-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <h2>Detalhes da Leitura</h2>
+                                <div class="reading-details">
+                                    <p><strong>Data/Hora:</strong> ${new Date(reading.timestamp).toLocaleString()}</p>
+                                    <p><strong>Tensão:</strong> ${reading.voltage} V</p>
+                                    <p><strong>Status:</strong> ${getStatusText(reading.voltage)}</p>
+                                    <p><strong>Tomada:</strong> ${socketName}</p>
+                                    <p><strong>Origem:</strong> ${reading.source === 'personal' ? 
+                                        'Pessoal' : `Compartilhado por ${reading.sharedByEmail}`}</p>
+                                </div>
+                                <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button">Fechar</button>
+                            </div>
+                        `;
+                        document.body.appendChild(popup);
+                    }
+                });
+            }
+        }
+
+        // Add realtime listener for socket status changes
+        function setupSocketStatusListener() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const socketId = sessionStorage.getItem('currentSocket');
+                        if (socketId) {
+                            const sockets = doc.data().sockets || [];
+                            const socket = sockets.find(s => s.id === socketId);
+                            
+                            if (!socket || socket.enabled === false) {
+                                showToast('Esta tomada foi desativada', 'error');
+                                stopReading();
+                                sessionStorage.removeItem('currentSocket');
+                                document.querySelector('.current-socket-name').textContent = 'Nenhuma selecionada';
+                            }
+                        }
+                    }
+                });
+        }
+
+        // Functions for new buttons
+        function saveCurrentReading() {
+            const currentVoltage = document.querySelector('.voltage-value').textContent;
+            if (currentVoltage === 'N/A') {
+                showToast('Nenhuma leitura disponível para salvar', 'error');
+                return;
+            }
+
+            saveReading(parseFloat(currentVoltage));
+            showToast('Leitura salva com sucesso!', 'success');
+        }
+
+        function showReadingHistory() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const socketId = sessionStorage.getItem('currentSocket');
+            if (!socketId) {
+                showToast('Selecione uma tomada primeiro', 'error');
+                return;
+            }
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const readings = data.readings || [];
+                    const socketReadings = readings.filter(r => r.socketId === socketId);
+                    
+                    const popup = document.createElement('div');
+                    popup.className = 'settings-modal-overlay';
+                    popup.innerHTML = `
+                        <div class="settings-modal">
+                            <div class="settings-header">
+                                <h2>Histórico de Leituras</h2>
+                                <button class="close-btn" onclick="this.closest('.settings-modal-overlay').remove()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="settings-content">
+                                <div class="readings-list">
+                                    ${socketReadings.length === 0 ? 
+                                        '<p class="no-readings">Nenhuma leitura registrada</p>' :
+                                        socketReadings.sort((a, b) => b.timestamp - a.timestamp)
+                                            .map(reading => `
+                                                <div class="reading-item">
+                                                    <div class="reading-info">
+                                                        <span class="reading-value">${reading.voltage}V</span>
+                                                        <span class="reading-time">${new Date(reading.timestamp).toLocaleString()}</span>
+                                                    </div>
+                                                    <div class="reading-status ${getVoltageStatusClass(reading.voltage)}">
+                                                        ${getVoltageStatusText(reading.voltage)}
+                                                    </div>
+                                                </div>
+                                            `).join('')
+                                    }
+                                </div>
+                            </div>
+                            <div class="settings-footer">
+                                <button class="settings-button cancel" onclick="this.closest('.settings-modal-overlay').remove()">Fechar</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(popup);
+                }
+            });
+        }
+
+        function getVoltageStatusClass(voltage) {
+            if (voltage < 200) return 'low';
+            if (voltage > 240) return 'high';
+            return 'normal';
+        }
+
+        function getVoltageStatusText(voltage) {
+            if (voltage < 200) return 'Baixa';
+            if (voltage > 240) return 'Alta';
+            return 'Normal';
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+        .voltage-content {
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .voltage-unit {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            color: #888;
+            margin-top: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        .voltage-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 1rem 0;
+            display: inline-block;
+        }
+
+        .voltage-status.normal {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .voltage-status.low {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .voltage-status.high {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .control-buttons button.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            stroke: #4CAF50;
+        }
+
+        .readings-remaining {
+            font-size: 0.8em;
+            color: #888;
+            display: block;
+            margin-top: 0.5rem;
+        }
+
+        .voltage-status {
+            text-align: center;
+        }
+
+        .auth-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .auth-popup {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+
+        .auth-popup-icon {
+            font-size: 2.5rem;
+            color: #ff4444;
+            margin-bottom: 1rem;
+            margin-right: -30px;
+        }
+
+        .auth-popup h2 {
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .auth-popup p {
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-popup-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup-button:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Add these styles to your existing styles section */
+        .share-popup {
+            max-width: 500px !important;
+        }
+
+        .share-options {
+            margin: 1.5rem 0;
+        }
+
+        .share-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .share-input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .share-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .share-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(105, 255, 68, 0.4);
+        }
+
+        i.fas.fa-plus {
+            padding: 0;
+        }
+
+        i.fas.fa-times {
+            padding: 0;
+        }
+
+        .shared-users-list {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .shared-users-list h3 {
+            margin: 0 0 1rem 0;
+            color: #888;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .shared-user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .shared-user-item.pending {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+        }
+
+        .shared-user-item.accepted {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+        }
+
+        .socket-icon i {
+            padding: 0;
+        }
+
+        .shared-user-email {
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .status-badge.accepted {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .remove-share-btn {
+            background: none;
+            border: none;
+            color: #ff4444;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .remove-share-btn:hover {
+            color: #ff6666;
+        }
+
+        .no-shared {
+            color: #666;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            background: rgba(76, 175, 80, 0.9);
+        }
+
+        .toast-error {
+            background: rgba(244, 67, 54, 0.9);
+        }
+
+        .toast-info {
+            background: rgba(33, 150, 243, 0.9);
+        }
+
+        /* Add socket selection styles */
+        .socket-popup .socket-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .control-buttons i {
+            padding: 0;
+        }
+
+        .socket-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .socket-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .socket-option i {
+            color: #ff4444;
+        }
+
+        .socket-btn {
+            background: rgba(255, 68, 68, 0.15);
+            border: none;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            width: 100%;
+            height: 100%;
+        }
+
+        .socket-btn:hover {
+            background: rgba(255, 68, 68, 0.295);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+        }
+
+        .socket-btn i {
+            font-size: 1.2rem;
+        }
+
+        .control-buttons button {
+            height: 48px; /* Ensure consistent height */
+        }
+
+        .socket-selection {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .socket-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .socket-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .socket-option-content {
+            flex: 1;
+        }
+
+        .socket-option-name {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #fff;
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .socket-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .socket-icon i {
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .socket-option-info {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .socket-option-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .socket-option-status.active {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .socket-option-status.disabled {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .socket-option-status.inactive {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .settings-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .settings-modal {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            margin: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .settings-content {
+            padding: 1rem;
+        }
+
+        .settings-section.socket-selection {
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 10px; /* Add padding for scrollbar */
+            margin-right: -10px; /* Offset padding */
+        }
+
+        .settings-section {
+            padding: 0;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 0;
+        }
+
+        .settings-header h2 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        .settings-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .settings-button {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-button.cancel {
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+        }
+
+        .settings-button.cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .current-socket-info {
+            text-align: center;
+            padding: 1rem;
+            color: #888;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+        }
+
+        .current-socket-name {
+            color: #4CAF50;
+            font-weight: 500;
+        }
+
+        .voltage-card {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .socket-option.current {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+        }
+
+        .socket-option.current .socket-icon {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .socket-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Custom Scrollbar Styles */
+        .settings-section.socket-selection::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .settings-section.socket-selection::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .settings-section.socket-selection::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .settings-section.socket-selection::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Firefox Scrollbar */
+        .settings-section.socket-selection {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.05);
+        }
+
+        /* Styles for new buttons */
+        .save-btn, .history-btn, .socket-btn {
+            background: rgba(255, 68, 68, 0.15);
+            border: none;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            width: 100%;
+            height: 100%;
+        }
+
+        .save-btn {
+            background: rgba(76, 175, 80, 0.15);
+        }
+
+        .socket-btn {
+            background: rgba(33, 150, 243, 0.15); /* Blue background */
+        }
+
+        .history-btn {
+            background: rgba(255, 193, 7, 0.15); /* Amber/Gold background */
+        }
+
+        .save-btn:hover {
+            background: rgba(76, 175, 80, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .socket-btn:hover {
+            background: rgba(33, 150, 243, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(33, 150, 243, 0.4);
+        }
+
+        .history-btn:hover {
+            background: rgba(255, 193, 7, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+        }
+
+        /* Styles for readings history */
+        .readings-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .reading-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .reading-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .reading-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .reading-value {
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .reading-time {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .reading-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .reading-status.normal {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .reading-status.low, .reading-status.high {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+        }
+
+        .no-readings {
+            text-align: center;
+            color: #888;
+            padding: 2rem;
+        }
+
+        /* Add notification styles */
+        .notification {
+            position: fixed;
+            top: 80px; /* Changed from 20px to be below the header */
+            right: 20px;
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transform: translateX(120%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 99999;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            max-width: 300px;
+            min-width: 250px;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .notification i {
+            font-size: 1.2rem;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification.success {
+            border-left: 4px solid #4CAF50;
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.1) 0%, #1a1a1a 100%);
+        }
+
+        .notification.success i {
+            color: #4CAF50;
+        }
+
+        .notification.error {
+            border-left: 4px solid #f44336;
+            background: linear-gradient(90deg, rgba(244, 67, 54, 0.1) 0%, #1a1a1a 100%);
+        }
+
+        .notification.error i {
+            color: #f44336;
+        }
+
+        .notification.info {
+            border-left: 4px solid #2196F3;
+            background: linear-gradient(90deg, rgba(33, 150, 243, 0.1) 0%, #1a1a1a 100%);
+        }
+
+        .notification.info i {
+            color: #2196F3;
+        }
+
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notification-title {
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .notification-message {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            word-wrap: break-word;
+        }
+    </style>
+</body>
+</html> 

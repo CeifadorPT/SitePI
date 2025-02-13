@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum - Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html" class="active">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="motion.html">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <section class="forum-section">
+            <div class="forum-header">
+                <h1>Forum</h1>
+                <button id="newTopicBtn" class="new-topic-btn">
+                    <i class="fas fa-plus" style="padding-right: 0px;"></i> Novo Tópico
+                </button>
+            </div>
+
+            <div class="forum-container">
+                <!-- Topics List View -->
+                <div id="topicsView" class="topics-list">
+                    <!-- Topics will be added here dynamically -->
+                </div>
+
+                <!-- Topic Detail View (initially hidden) -->
+                <div id="topicDetailView" class="topic-detail" style="display: none;">
+                    <div class="topic-detail-header">
+                        <button class="back-btn" onclick="showTopicsList()">
+                            <i class="fas fa-arrow-left" style="padding-right: 0px;"></i> Voltar
+                        </button>
+                        <h2 id="topicTitle">Título do Tópico</h2>
+                        <span id="topicDate">Data</span>
+                    </div>
+                    <div id="messagesList" class="messages-list">
+                        <!-- Messages will be added here dynamically -->
+                    </div>
+                    <div class="message-input">
+                        <textarea id="newMessage" placeholder="Escreva sua mensagem..."></textarea>
+                        <button onclick="sendMessage()" class="send-btn">
+                            <i class="fas fa-paper-plane" style="padding-right: 0px;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <style>
+        /* Update main element styles */
+        main {
+            height: calc(100vh - 60px);
+            margin-top: 60px;
+            overflow-y: auto;
+        }
+
+        main::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        main::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        main::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        main::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Update forum section styles */
+        .forum-section {
+            padding: 2rem;
+            padding-bottom: 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: calc(100vh - 120px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Update forum container styles */
+        .forum-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 2rem;
+        }
+
+        /* Update topics list styles */
+        .topics-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .forum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .forum-header h1 {
+            color: #fff;
+            font-size: 2rem;
+        }
+
+        .new-topic-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .new-topic-btn:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        .topic-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .topic-card:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .topic-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        .topic-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .topic-info h3 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 500px;
+        }
+
+        .topic-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .topic-detail {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .topic-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .topic-detail-header h2 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60%;
+            margin-right: auto;
+        }
+
+        .topic-detail-header span {
+            color: #888;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .back-btn:hover {
+            color: #fff;
+        }
+
+        .messages-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 1rem;
+        }
+
+        .message {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .message-input {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .message-input textarea {
+            flex: 1;
+            min-height: 100px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            resize: vertical;
+        }
+
+        .message-input textarea::placeholder {
+            color: #666;
+        }
+
+        .message-input textarea:focus {
+            outline: none;
+            border-color: rgba(255, 68, 68, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .message-input textarea:disabled {
+            background: rgba(255, 255, 255, 0.02);
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .send-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .auth-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .auth-popup {
+            background: rgba(18, 18, 18, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+
+        .auth-popup-icon {
+            font-size: 2.5rem;
+            color: #ff4444;
+            margin-bottom: 1rem;
+        }
+
+        .auth-popup h2 {
+            color: #fff;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+
+        .auth-popup-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .auth-popup-form textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .auth-popup-button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup-button:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        .auth-popup-button.cancel-btn {
+            background: #666;
+            margin-top: 0.5rem;
+        }
+
+        .auth-popup-button.cancel-btn:hover {
+            background: #777;
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Add these styles for form inputs */
+        .auth-popup-form input,
+        .auth-popup-form textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .auth-popup-form input:focus,
+        .auth-popup-form textarea:focus {
+            outline: none;
+            border-color: rgba(255, 68, 68, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .auth-popup-form input::placeholder,
+        .auth-popup-form textarea::placeholder {
+            color: #666;
+        }
+
+        .form-group {
+            position: relative;
+            width: 100%;
+        }
+
+        .auth-popup p {
+            color: #888;
+            margin-bottom: 1.5rem;
+        }
+
+        .topic-card p {
+            color: #888;
+            line-height: 1.5;
+            max-height: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+        }
+
+        .message p {
+            color: #fff;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .message-header strong {
+            color: #fff;
+        }
+
+        .message-header span {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .topic-detail h2 {
+            color: #fff;
+            margin: 0;
+        }
+
+        .topic-detail span {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .delete-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .delete-btn:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        .message-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .delete-message-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.9em;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .delete-message-btn:hover {
+            color: #ff4444;
+        }
+
+        /* Update pagination styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .pagination button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .current-page {
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .description-message {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-left: 3px solid #ff4444;
+        }
+
+        .read-more-btn {
+            background: none;
+            border: none;
+            color: #ff4444;
+            cursor: pointer;
+            padding: 0.5rem 0;
+            font-size: 0.9em;
+            transition: color 0.3s ease;
+        }
+
+        .read-more-btn:hover {
+            color: #ff6666;
+            text-decoration: underline;
+        }
+
+        /* Add loading animation styles */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(18, 18, 18, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #ff4444;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .user-link {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .user-link:hover {
+            color: #ff4444;
+        }
+
+        .dev-icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .dev-icon {
+            color: #ff4444;
+            font-size: 0.8em;
+            margin-right: 0.5rem;
+            padding-right: 0;
+        }
+
+        .message-header strong {
+            display: flex;
+            align-items: center;
+        }
+
+        /* Update messages list scrollbar styles */
+        .messages-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .messages-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .messages-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Add Firefox scrollbar styles */
+        .messages-list {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.1);
+        }
+
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .toast.success {
+            background-color: #4CAF50;
+        }
+
+        .toast.error {
+            background-color: #f44336;
+        }
+
+        .toast.warning {
+            background-color: #ff9800;
+        }
+
+        .toast.info {
+            background-color: #2196F3;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Add this at the top of your script
+        const ALLOWED_HTML_TAGS = {
+            'b': [], // bold
+            'strong': [], // bold
+            'i': [], // italic
+            'em': [], // italic
+            'br': [], // line break
+            'code': [], // code
+            'pre': [], // preformatted text
+            'u': [], // underline
+            'strike': [], // strikethrough
+            's': [], // strikethrough
+        };
+
+        // HTML sanitization function
+        function sanitizeHTML(input) {
+            const doc = new DOMParser().parseFromString(input, 'text/html');
+            const sanitizedContent = [];
+            
+            function processNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    sanitizedContent.push(node.textContent);
+                    return;
+                }
+                
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tag = node.tagName.toLowerCase();
+                    if (ALLOWED_HTML_TAGS.hasOwnProperty(tag)) {
+                        sanitizedContent.push(`<${tag}>`);
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                        sanitizedContent.push(`</${tag}>`);
+                    } else {
+                        // For disallowed tags, just process their children as text
+                        Array.from(node.childNodes).forEach(child => processNode(child));
+                    }
+                }
+            }
+            
+            processNode(doc.body);
+            return sanitizedContent.join('');
+        }
+
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        let currentTopicId = null;
+        let currentPage = 1;
+        const topicsPerPage = 5;
+        let totalTopics = 0;
+        let lastVisible = null;
+        let firstVisible = null;
+
+        // Add this at the start of your script
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                // Load topics only after auth is confirmed
+                loadTopics();
+            } else {
+                loadTopics(); // Still load topics for non-authenticated users
+            }
+        });
+
+        // New Topic Modal
+        const newTopicBtn = document.getElementById('newTopicBtn');
+
+        newTopicBtn.onclick = () => {
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (!user) {
+                    // Show login required popup
+                    const popup = document.createElement('div');
+                    popup.className = 'auth-popup-overlay';
+                    popup.innerHTML = `
+                        <div class="auth-popup">
+                            <div class="auth-popup-icon">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <h2>Acesso Restrito</h2>
+                            <p style="color: #888;">Por favor, faça login para criar um tópico.</p>
+                            <button onclick="window.location.href='index.html'" class="auth-popup-button">Fazer Login</button>
+                            <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">Cancelar</button>
+                        </div>
+                    `;
+                    document.body.appendChild(popup);
+                    return;
+                }
+
+                // Check if user is muted
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    const userData = doc.data();
+                    if (userData.muted) {
+                        const muteEnd = userData.muted.muteEnd;
+                        if (muteEnd === 'permanent') {
+                            alert('Você está permanentemente silenciado e não pode criar tópicos.');
+                            return;
+                        }
+                        
+                        const muteEndDate = muteEnd.toDate();
+                        if (muteEndDate > new Date()) {
+                            const timeLeft = formatTimeLeft(muteEndDate);
+                            alert(`Você está silenciado e não pode criar tópicos.\nTempo restante: ${timeLeft}\nMotivo: ${userData.muted.muteReason || 'Não especificado'}`);
+                            return;
+                        } else {
+                            // Mute expired, remove it
+                            db.collection('users').doc(user.uid).update({
+                                muted: firebase.firestore.FieldValue.delete()
+                            });
+                        }
+                    }
+
+                    // If not muted, show create topic popup
+                    const popup = document.createElement('div');
+                    popup.className = 'auth-popup-overlay';
+                    popup.innerHTML = `
+                        <div class="auth-popup">
+                            <div class="auth-popup-icon">
+                                <i class="fas fa-edit" style="padding-right: 0px;"></i>
+                            </div>
+                            <h2>Novo Tópico</h2>
+                            <form id="newTopicForm" class="auth-popup-form">
+                                <div class="form-group">
+                                    <input type="text" id="topicTitleInput" placeholder="Título do tópico" required>
+                                </div>
+                                <div class="form-group">
+                                    <textarea id="topicDescriptionInput" placeholder="Descrição do tópico" required></textarea>
+                                </div>
+                                <button type="submit" class="auth-popup-button">Criar Tópico</button>
+                                <button type="button" onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">Cancelar</button>
+                            </form>
+                        </div>
+                    `;
+                    document.body.appendChild(popup);
+
+                    document.getElementById('newTopicForm').addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const submitButton = e.target.querySelector('button[type="submit"]');
+                        if (!submitButton.disabled) {  // Only proceed if button isn't already disabled
+                            createTopic();
+                        }
+                    });
+                });
+            });
+        };
+
+        function loadTopics() {
+            const topicsList = document.getElementById('topicsView');
+            
+            // Get total count first
+            db.collection('topics').get().then(snapshot => {
+                totalTopics = snapshot.size;
+                const totalPages = Math.ceil(totalTopics / topicsPerPage);
+                
+                // Update pagination UI
+                updatePagination(totalPages);
+                
+                // Get first page of topics
+                db.collection('topics')
+                    .orderBy('createdAt', 'desc')
+                    .limit(topicsPerPage)
+                    .get()
+                    .then(snapshot => {
+                        topicsList.innerHTML = '';
+                        lastVisible = snapshot.docs[snapshot.docs.length - 1];
+                        firstVisible = snapshot.docs[0];
+                        
+                        snapshot.forEach(doc => {
+                            const topic = doc.data();
+                            const topicCard = createTopicCard(doc.id, topic);
+                            topicsList.appendChild(topicCard);
+                        });
+                    });
+            });
+        }
+
+        function createTopicCard(id, topic) {
+            const div = document.createElement('div');
+            div.className = 'topic-card';
+            div.onclick = () => openTopic(id);
+            div.innerHTML = `
+                <div class="topic-header">
+                    <div class="topic-info">
+                        <h3>${topic.title}</h3>
+                        <div class="topic-meta">
+                            <span><i class="fas fa-user" style="padding-right: 0px;"></i> ${topic.authorName}</span>
+                            <span><i class="fas fa-clock" style="padding-right: 0px;"></i> ${new Date(topic.createdAt.seconds * 1000).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </div>
+                <p>${topic.description}</p>
+            `;
+            return div;
+        }
+
+        function createTopic() {
+            const title = sanitizeHTML(document.getElementById('topicTitleInput').value.trim());
+            const description = sanitizeHTML(document.getElementById('topicDescriptionInput').value.trim());
+            const createButton = document.querySelector('.auth-popup-button[type="submit"]');
+            const user = firebase.auth().currentUser;
+
+            // Disable button immediately
+            createButton.disabled = true;
+            createButton.style.opacity = '0.7';
+            createButton.style.cursor = 'not-allowed';
+
+            if (!user) {
+                alert('Por favor, faça login para criar um tópico.');
+                // Re-enable button if not logged in
+                createButton.disabled = false;
+                createButton.style.opacity = '1';
+                createButton.style.cursor = 'pointer';
+                return;
+            }
+
+            if (!title || !description) {
+                alert('Por favor, preencha todos os campos.');
+                // Re-enable button if fields are empty
+                createButton.disabled = false;
+                createButton.style.opacity = '1';
+                createButton.style.cursor = 'pointer';
+                return;
+            }
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const userData = doc.data();
+                
+                if (userData.muted) {
+                    const muteEnd = userData.muted.muteEnd;
+                    if (muteEnd === 'permanent') {
+                        alert('Você está permanentemente silenciado.');
+                        // Re-enable button if user is muted
+                        createButton.disabled = false;
+                        createButton.style.opacity = '1';
+                        createButton.style.cursor = 'pointer';
+                        return;
+                    }
+                    
+                    const muteEndDate = muteEnd.toDate();
+                    if (muteEndDate > new Date()) {
+                        const timeLeft = formatTimeLeft(muteEndDate);
+                        alert(`Você está silenciado. Tempo restante: ${timeLeft}\nMotivo: ${userData.muted.muteReason || 'Não especificado'}`);
+                        // Re-enable button if user is muted
+                        createButton.disabled = false;
+                        createButton.style.opacity = '1';
+                        createButton.style.cursor = 'pointer';
+                        return;
+                    } else {
+                        // Mute expired, remove it
+                        db.collection('users').doc(user.uid).update({
+                            muted: firebase.firestore.FieldValue.delete()
+                        });
+                    }
+                }
+
+                db.collection('topics').add({
+                    title: title,
+                    description: description,
+                    authorId: user.uid,
+                    authorName: user.displayName || user.email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    document.querySelector('.auth-popup-overlay').remove();
+                    // Reset to first page and reload topics
+                    currentPage = 1;
+                    lastVisible = null;
+                    firstVisible = null;
+                    loadTopics();
+                    showToast('Tópico criado com sucesso!', 'success');
+                }).catch(error => {
+                    console.error("Error creating topic:", error);
+                    showToast('Erro ao criar tópico. Por favor, tente novamente.', 'error');
+                    // Re-enable button if there's an error
+                    createButton.disabled = false;
+                    createButton.style.opacity = '1';
+                    createButton.style.cursor = 'pointer';
+                });
+            }).catch(error => {
+                console.error("Error checking mute status:", error);
+                // Re-enable button if there's an error
+                createButton.disabled = false;
+                createButton.style.opacity = '1';
+                createButton.style.cursor = 'pointer';
+            });
+        }
+
+        function openTopic(topicId) {
+            // Show loading overlay first
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+            document.querySelector('.forum-container').appendChild(loadingOverlay);
+
+            // Create a promise that resolves after 300ms
+            const minLoadTime = new Promise(resolve => setTimeout(resolve, 300));
+
+            currentTopicId = topicId;
+            document.getElementById('topicsView').style.display = 'none';
+            document.getElementById('topicDetailView').style.display = 'block';
+            
+            // Get both topic data and author data
+            Promise.all([
+                db.collection('topics').doc(topicId).get(),
+                minLoadTime
+            ]).then(([topicDoc]) => {
+                const topic = topicDoc.data();
+                
+                // Get author's data to check isDev status
+                db.collection('users').doc(topic.authorId).get().then(authorDoc => {
+                    const authorData = authorDoc.data();
+                    const currentUser = firebase.auth().currentUser;
+                    
+                    // Remove any existing delete button first
+                    const existingDeleteBtn = document.getElementById('deleteTopicBtn');
+                    if (existingDeleteBtn) {
+                        existingDeleteBtn.remove();
+                    }
+                    
+                    // Check if user is owner OR is a moderator
+                    if (currentUser) {
+                        db.collection('users').doc(currentUser.uid).get().then(userDoc => {
+                            const userData = userDoc.data();
+                            const isOwner = topic.authorId === currentUser.uid;
+                            const isModerator = userData?.isDev;
+
+                            if (isOwner || isModerator) {
+                                const deleteBtn = document.createElement('button');
+                                deleteBtn.id = 'deleteTopicBtn';
+                                deleteBtn.className = 'delete-btn';
+                                deleteBtn.innerHTML = '<i class="fas fa-trash" style="padding-right: 0px;"></i> Excluir';
+                                deleteBtn.onclick = () => confirmDeleteTopic(topicId);
+                                document.querySelector('.topic-detail-header').appendChild(deleteBtn);
+                            }
+                        });
+                    }
+
+                    document.getElementById('topicTitle').textContent = topic.title;
+                    document.getElementById('topicDate').textContent = 
+                        new Date(topic.createdAt.seconds * 1000).toLocaleDateString();
+
+                    const messagesList = document.getElementById('messagesList');
+                    messagesList.innerHTML = '';
+                    
+                    const descriptionDiv = document.createElement('div');
+                    descriptionDiv.className = 'message description-message';
+                    
+                    const isLongDescription = topic.description.length > 300;
+                    const shortDescription = isLongDescription ? 
+                        topic.description.substring(0, 300) + '...' : 
+                        topic.description;
+
+                    descriptionDiv.innerHTML = `
+                        <div class="message-header">
+                            <strong>
+                                ${authorData?.isDev ? '<span class="dev-icon-wrapper"><i class="fas fa-hammer dev-icon"></i></span>' : ''}
+                                <a href="profiles.html?id=${topic.authorId}" class="user-link">
+                                    ${topic.authorName}
+                                </a>
+                            </strong>
+                            <span>${new Date(topic.createdAt.seconds * 1000).toLocaleString()}</span>
+                        </div>
+                        <p id="descriptionText">${shortDescription}</p>
+                        ${isLongDescription ? `
+                            <button onclick="toggleDescription(this, \`${topic.description.replace(/`/g, '\\`')}\`)" class="read-more-btn">
+                                Ler mais
+                            </button>
+                        ` : ''}
+                    `;
+                    messagesList.appendChild(descriptionDiv);
+                    
+                    // Remove loading overlay
+                    loadingOverlay.remove();
+                    
+                    // Set up real-time updates for messages
+                    setupMessageListener(topicId);
+                });
+            });
+        }
+
+        // Update the message listener function
+        function setupMessageListener(topicId) {
+            const messagesList = document.getElementById('messagesList');
+            const currentUser = firebase.auth().currentUser;
+            
+            // Remove any existing listener
+            if (window.messageListener) {
+                window.messageListener();
+            }
+            
+            // First check if current user is a moderator
+            let isModerator = false;
+            if (currentUser) {
+                db.collection('users').doc(currentUser.uid).get().then(doc => {
+                    isModerator = doc.data()?.isDev || false;
+                });
+            }
+            
+            // Set up new listener
+            window.messageListener = db.collection('topics').doc(topicId)
+                .collection('messages')
+                .orderBy('createdAt')
+                .onSnapshot((snapshot) => {
+                    // Skip the description message
+                    const descriptionMessage = messagesList.querySelector('.description-message');
+                    messagesList.innerHTML = '';
+                    if (descriptionMessage) {
+                        messagesList.appendChild(descriptionMessage);
+                    }
+
+                    snapshot.forEach((doc) => {
+                        const message = doc.data();
+                        
+                        // Check if user exists
+                        db.collection('users').doc(message.authorId).get().then(userDoc => {
+                            const isOwner = currentUser && message.authorId === currentUser.uid;
+                            const messageDiv = document.createElement('div');
+                            messageDiv.className = 'message';
+                            
+                            messageDiv.innerHTML = `
+                                <div class="message-header">
+                                    <strong>
+                                        ${userDoc.exists ? `
+                                            ${message.isDev ? '<span class="dev-icon-wrapper"><i class="fas fa-hammer dev-icon"></i></span>' : ''}
+                                            <a href="profiles.html?id=${message.authorId}" class="user-link">
+                                                ${message.authorName} ‎ 
+                                            </a> ${userDoc.data().isGay ? '<span class="lgbt-badge" title="LGBT+"><i class="fas fa-heart" style="padding-right: 0;"></i></span>' : ''}
+                                        ` : `
+                                            <a href="profiles.html?id=${message.authorId}" class="user-link">(Conta Apagada)</a>
+                                        `}
+                                    </strong>
+                                    <div class="message-actions">
+                                        ${(isOwner || isModerator) ? `
+                                            <button onclick="event.stopPropagation(); confirmDeleteMessage('${doc.id}')" class="delete-message-btn">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        ` : ''}
+                                        <span>${new Date(message.createdAt.seconds * 1000).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                <p>${message.content}</p>
+                            `;
+                            messagesList.appendChild(messageDiv);
+                        });
+                    });
+                    messagesList.scrollTop = messagesList.scrollHeight;
+
+                    // Check if user is muted
+                    if (currentUser) {
+                        db.collection('users').doc(currentUser.uid).get().then(doc => {
+                            const userData = doc.data();
+                            const messageInput = document.getElementById('newMessage');
+                            const sendBtn = document.querySelector('.send-btn');
+                            
+                            if (userData.muted) {
+                                const muteEnd = userData.muted.muteEnd;
+                                if (muteEnd === 'permanent' || muteEnd.toDate() > new Date()) {
+                                    messageInput.disabled = true;
+                                    sendBtn.disabled = true;
+                                    messageInput.placeholder = 'Você está silenciado';
+                                }
+                            }
+                        });
+                    }
+                });
+        }
+
+        // Update showTopicsList to clean up listener
+        function showTopicsList() {
+            if (window.messageListener) {
+                window.messageListener();
+                window.messageListener = null;
+            }
+            document.getElementById('topicsView').style.display = 'flex';
+            document.getElementById('topicDetailView').style.display = 'none';
+            currentTopicId = null;
+        }
+
+        function confirmDeleteTopic(topicId) {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-exclamation-triangle" style="color: #ff4444;"></i>
+                    </div>
+                    <h2>Confirmar Exclusão</h2>
+                    <p style="color: #888;">Tem certeza que deseja excluir este tópico? Esta ação não pode ser desfeita.</p>
+                    <button onclick="deleteTopic('${topicId}')" class="auth-popup-button">Excluir</button>
+                    <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">Cancelar</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        function deleteTopic(topicId) {
+            // Delete all messages in the topic first
+            db.collection('topics').doc(topicId)
+                .collection('messages')
+                .get()
+                .then((snapshot) => {
+                    const batch = db.batch();
+                    snapshot.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    return batch.commit();
+                })
+                .then(() => {
+                    // Then delete the topic itself
+                    return db.collection('topics').doc(topicId).delete();
+                })
+                .then(() => {
+                    document.querySelector('.auth-popup-overlay').remove();
+                    showTopicsList();
+                    // Reset to first page and reload topics
+                    currentPage = 1;
+                    lastVisible = null;
+                    firstVisible = null;
+                    loadTopics();
+                    showToast('Tópico excluído com sucesso!', 'success');
+                })
+                .catch((error) => {
+                    console.error("Error deleting topic: ", error);
+                    showToast('Erro ao excluir tópico. Por favor, tente novamente.', 'error');
+                });
+        }
+
+        function confirmDeleteMessage(messageId) {
+            const popup = document.createElement('div');
+            popup.className = 'auth-popup-overlay';
+            popup.innerHTML = `
+                <div class="auth-popup">
+                    <div class="auth-popup-icon">
+                        <i class="fas fa-exclamation-triangle" style="color: #ff4444;"></i>
+                    </div>
+                    <h2>Confirmar Exclusão</h2>
+                    <p style="color: #888;">Tem certeza que deseja excluir esta mensagem?</p>
+                    <button onclick="deleteMessage('${messageId}')" class="auth-popup-button">Excluir</button>
+                    <button onclick="this.closest('.auth-popup-overlay').remove()" class="auth-popup-button cancel-btn">Cancelar</button>
+                </div>
+            `;
+            document.body.appendChild(popup);
+        }
+
+        function deleteMessage(messageId) {
+            db.collection('topics').doc(currentTopicId)
+                .collection('messages').doc(messageId)
+                .delete()
+                .then(() => {
+                    document.querySelector('.auth-popup-overlay').remove();
+                    showToast('Mensagem excluída com sucesso!', 'success');
+                })
+                .catch((error) => {
+                    console.error("Error deleting message: ", error);
+                    showToast('Erro ao excluir mensagem. Por favor, tente novamente.', 'error');
+                });
+        }
+
+        // Add pagination functions
+        function updatePagination(totalPages) {
+            const paginationDiv = document.createElement('div');
+            paginationDiv.className = 'pagination';
+            paginationDiv.innerHTML = `
+                <button onclick="changePage('prev')" ${currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span class="current-page">Página ${currentPage} de ${totalPages}</span>
+                <button onclick="changePage('next')" ${currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+            
+            // Remove existing pagination if any
+            const existingPagination = document.querySelector('.pagination');
+            if (existingPagination) {
+                existingPagination.remove();
+            }
+            
+            // Add new pagination after the forum header
+            const forumHeader = document.querySelector('.forum-header');
+            forumHeader.insertAdjacentElement('afterend', paginationDiv);
+        }
+
+        function changePage(direction) {
+            const topicsList = document.getElementById('topicsView');
+            let query;
+
+            if (direction === 'next' && lastVisible) {
+                currentPage++;
+                query = db.collection('topics')
+                    .orderBy('createdAt', 'desc')
+                    .startAfter(lastVisible)
+                    .limit(topicsPerPage);
+            } else if (direction === 'prev' && firstVisible && currentPage > 1) {
+                currentPage--;
+                query = db.collection('topics')
+                    .orderBy('createdAt', 'desc')
+                    .endBefore(firstVisible)
+                    .limitToLast(topicsPerPage);
+            } else {
+                return;
+            }
+            
+            query.get().then(snapshot => {
+                if (!snapshot.empty) {
+                    topicsList.innerHTML = '';
+                    lastVisible = snapshot.docs[snapshot.docs.length - 1];
+                    firstVisible = snapshot.docs[0];
+                    
+                    snapshot.forEach(doc => {
+                        const topic = doc.data();
+                        const topicCard = createTopicCard(doc.id, topic);
+                        topicsList.appendChild(topicCard);
+                    });
+                    
+                    // Update pagination
+                    const totalPages = Math.ceil(totalTopics / topicsPerPage);
+                    updatePagination(totalPages);
+                    
+                    // Scroll to top of topics list
+                    topicsList.scrollTop = 0;
+                } else {
+                    // If no more results, revert page number
+                    if (direction === 'next') currentPage--;
+                    if (direction === 'prev') currentPage++;
+                }
+            });
+        }
+
+        // Add this function for toggling description
+        function toggleDescription(button, fullText) {
+            const descriptionText = button.previousElementSibling;
+            const isExpanded = button.textContent.includes('Ler menos');
+            
+            if (isExpanded) {
+                descriptionText.textContent = fullText.substring(0, 300) + '...';
+                button.textContent = 'Ler mais';
+            } else {
+                descriptionText.textContent = fullText;
+                button.textContent = 'Ler menos';
+            }
+        }
+
+        // Update the sendMessage function to use sanitization
+        function sendMessage() {
+            const messageInput = document.getElementById('newMessage');
+            const sendButton = document.querySelector('.send-btn');
+            const content = messageInput.value;
+            const user = firebase.auth().currentUser;
+
+            // Disable button immediately
+            sendButton.disabled = true;
+            sendButton.style.opacity = '0.7';
+            sendButton.style.cursor = 'not-allowed';
+
+            if (!user) {
+                alert('Por favor, faça login para enviar mensagens.');
+                // Re-enable button if not logged in
+                sendButton.disabled = false;
+                sendButton.style.opacity = '1';
+                sendButton.style.cursor = 'pointer';
+                return;
+            }
+
+            if (!content.trim()) {
+                // Re-enable button if content is empty
+                sendButton.disabled = false;
+                sendButton.style.opacity = '1';
+                sendButton.style.cursor = 'pointer';
+                return;
+            }
+
+            // Check if user is muted
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const userData = doc.data();
+                
+                if (userData.muted) {
+                    const muteEnd = userData.muted.muteEnd;
+                    if (muteEnd === 'permanent') {
+                        alert('Você está permanentemente silenciado.');
+                        // Re-enable button if user is muted
+                        sendButton.disabled = false;
+                        sendButton.style.opacity = '1';
+                        sendButton.style.cursor = 'pointer';
+                        return;
+                    }
+                    
+                    const muteEndDate = muteEnd.toDate();
+                    if (muteEndDate > new Date()) {
+                        const timeLeft = formatTimeLeft(muteEndDate);
+                        alert(`Você está silenciado. Tempo restante: ${timeLeft}\nMotivo: ${userData.muted.muteReason || 'Não especificado'}`);
+                        // Re-enable button if user is muted
+                        sendButton.disabled = false;
+                        sendButton.style.opacity = '1';
+                        sendButton.style.cursor = 'pointer';
+                        return;
+                    } else {
+                        // Mute expired, remove it
+                        db.collection('users').doc(user.uid).update({
+                            muted: firebase.firestore.FieldValue.delete()
+                        });
+                    }
+                }
+
+                // If not muted, proceed with sending message
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    const userData = doc.data();
+                    
+                    // Sanitize the content before saving
+                    const sanitizedContent = sanitizeHTML(content);
+                    
+                    db.collection('topics').doc(currentTopicId)
+                        .collection('messages').add({
+                            content: sanitizedContent,
+                            authorId: user.uid,
+                            authorName: user.displayName || user.email,
+                            isDev: userData?.isDev || false,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }).then(() => {
+                            messageInput.value = '';
+                            // Re-enable button after successful send
+                            sendButton.disabled = false;
+                            sendButton.style.opacity = '1';
+                            sendButton.style.cursor = 'pointer';
+                            showToast('Mensagem enviada com sucesso!', 'success');
+                        }).catch(error => {
+                            console.error("Error sending message:", error);
+                            showToast('Erro ao enviar mensagem. Por favor, tente novamente.', 'error');
+                            sendButton.disabled = false;
+                            sendButton.style.opacity = '1';
+                            sendButton.style.cursor = 'pointer';
+                        });
+                }).catch(error => {
+                    console.error("Error getting user data:", error);
+                    // Re-enable button if there's an error
+                    sendButton.disabled = false;
+                    sendButton.style.opacity = '1';
+                    sendButton.style.cursor = 'pointer';
+                });
+            }).catch(error => {
+                console.error("Error checking mute status:", error);
+                // Re-enable button if there's an error
+                sendButton.disabled = false;
+                sendButton.style.opacity = '1';
+                sendButton.style.cursor = 'pointer';
+            });
+        }
+
+        // Add helper function to format time left
+        function formatTimeLeft(endDate) {
+            const diff = endDate - new Date();
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (days > 0) return `${days} dias, ${hours} horas`;
+            if (hours > 0) return `${hours} horas, ${minutes} minutos`;
+            return `${minutes} minutos`;
+        }
+    </script>
+</body>
+</html> 

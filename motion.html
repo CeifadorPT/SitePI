@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensores de Movimento - Apashe</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Add Firebase scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <div id="loader-wrapper">
+        <div class="loader">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+    </div>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="logo">apashe</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">INÍCIO</a></li>
+                    <li><a href="alunos.html">ALUNOS</a></li>
+                    <li><a href="forum.html">FORUM</a></li>
+                    <li><a href="contador.html">CONTADOR</a></li>
+                    <li><a href="sockets.html">TOMADAS</a></li>
+                    <li><a href="#" class="active">MOVIMENTO</a></li>
+                    <li><a href="settings.html">CONFIGURAÇÕES</a></li>
+                    <li><a href="plans.html">PLANOS</a></li>
+                </ul>
+            </div>
+            <div class="search-icon">
+                <a href="dashboard.html">
+                    <i class="fa-solid fa-circle-user"></i>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <h1>Meus Sensores de Movimento</h1>
+                <button class="add-sensor-btn" onclick="showAddSensorPopup()">
+                    <i class="fas fa-plus"></i>
+                    Novo Sensor
+                </button>
+            </div>
+
+            <div class="sensors-grid">
+                <!-- Sensors will be dynamically added here -->
+            </div>
+        </div>
+    </main>
+
+    <style>
+        i {
+            padding: 0 !important;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-header h1 {
+            color: #fff;
+            font-size: 1.8rem;
+        }
+
+        .add-sensor-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-sensor-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .sensors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .sensor-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .sensor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .sensor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .sensor-name {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .sensor-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            color: #fff;
+        }
+
+        .sensor-info {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .sensor-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+        }
+
+        .status-text {
+            color: #4CAF50;
+            font-size: 0.9rem;
+        }
+
+        .sensor-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 0.2rem;
+        }
+
+        .settings-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .settings-modal {
+            background: #1a1a1a;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 0;
+        }
+
+        .settings-header h2 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        .settings-section {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+        }
+
+        .settings-field {
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-field label {
+            color: #888;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .settings-field input,
+        .settings-field textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff !important;
+            padding: 0.8rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .settings-field input:focus,
+        .settings-field textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .settings-button {
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-button.cancel {
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+        }
+
+        .settings-button.save {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .settings-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .settings-button.cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .settings-button.save:hover {
+            background: #45a049;
+        }
+
+        .motion-history {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .motion-event {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .motion-event-time {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .motion-event-duration {
+            color: #4CAF50;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: rgba(76, 175, 80, 0.1);
+            padding: 0.2rem 0.8rem;
+            border-radius: 12px;
+        }
+
+        .motion-event-type {
+            color: #fff;
+            font-size: 0.9rem;
+            padding: 0.2rem 0.8rem;
+            border-radius: 12px;
+            background: rgba(255, 68, 68, 0.2);
+            margin-right: 10px;
+        }
+
+        .motion-event-type.detected {
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .sensitivity-slider {
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .sensitivity-slider input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+            position: relative;
+            top: 7px;
+        }
+
+        .sensitivity-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+            position: relative;
+            top: -7px;
+        }
+
+        .sensitivity-slider input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #45a049;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+        }
+
+        .sensitivity-slider input[type="range"]::-webkit-slider-runnable-track {
+            height: 6px;
+            background: linear-gradient(to right, #4CAF50 var(--value-percent, 50%), rgba(255, 255, 255, 0.1) var(--value-percent, 50%));
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .sensitivity-slider input[type="range"]:hover::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #45a049 var(--value-percent, 50%), rgba(255, 255, 255, 0.2) var(--value-percent, 50%));
+        }
+
+        .sensitivity-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        body {
+            background: #000;
+            font-family: 'Oswald', sans-serif;
+            position: relative;
+            min-height: 100vh;
+            margin: 0;
+            overflow-y: auto;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            width: 150vw;
+            height: 150vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        body::before {
+            bottom: -20%;
+            left: -20%;
+            background: radial-gradient(
+                circle at bottom left,
+                rgba(255, 0, 0, 0.3) 0%,
+                rgba(255, 0, 0, 0.1) 30%,
+                rgba(255, 0, 0, 0) 50%
+            );
+        }
+
+        body::after {
+            top: -30%;
+            right: -20%;
+            background: radial-gradient(
+                circle at top right,
+                rgba(255, 0, 0, 0.3) 0%,
+                rgba(255, 0, 0, 0.1) 30%,
+                rgba(255, 0, 0, 0) 50%
+            );
+        }
+
+        main {
+            padding-top: 80px;
+            position: relative;
+            z-index: 2;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.0);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            border-bottom: none;
+        }
+
+        input[type="text"],
+        input[type="range"],
+        textarea {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+        }
+
+        /* Fix input placeholder color */
+        input::placeholder,
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5) !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .sensor-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #fff;
+        }
+
+        .sensor-title h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .sensor-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sensor-icon i {
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        /* Ensure all text inputs have white text */
+        input[type="text"],
+        input[type="range"],
+        textarea,
+        h3 {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff !important;
+        }
+
+        .icon-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .icon-option {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .icon-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .icon-option.selected {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: rgba(255, 68, 68, 0.3);
+            color: #fff;
+        }
+
+        .icon-option i {
+            font-size: 1.2rem;
+        }
+
+        .toggle-btn {
+            position: relative;
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent !important;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-circle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px #4CAF50;
+        }
+
+        .toggle-btn.disabled .toggle-circle {
+            background: #f44336;
+            box-shadow: 0 0 10px #f44336;
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .toggle-btn.enabled:hover .toggle-circle {
+            box-shadow: 0 0 15px #4CAF50;
+        }
+
+        .toggle-btn.disabled:hover .toggle-circle {
+            box-shadow: 0 0 15px #f44336;
+        }
+
+        .view-history-btn {
+            display: block;
+            width: 100%;
+            background: #1E88E5;
+            color: white;
+            text-align: center;
+            padding: 0.8rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .view-history-btn:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+
+        .motion-history {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .motion-event {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .motion-event-time {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .motion-event-duration {
+            color: #4CAF50;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: rgba(76, 175, 80, 0.1);
+            padding: 0.2rem 0.8rem;
+            border-radius: 12px;
+        }
+
+        .motion-event-type.detected {
+            color: #4CAF50;
+        }
+
+        /* Loading animation */
+        #loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .loader {
+            display: flex;
+            gap: 8px;
+        }
+
+        .loader .bar {
+            width: 10px;
+            height: 32px;
+            background: #fff;
+            animation: loader 1.2s cubic-bezier(0, 0.5, 0.5, 1) infinite;
+            border-radius: 4px;
+        }
+
+        .loader .bar:nth-child(1) {
+            animation-delay: -0.24s;
+        }
+
+        .loader .bar:nth-child(2) {
+            animation-delay: -0.12s;
+        }
+
+        .loader .bar:nth-child(3) {
+            animation-delay: 0;
+        }
+
+        @keyframes loader {
+            0% {
+                transform: scaleY(0.4);
+                background: #ff4444;
+            }
+            20% {
+                transform: scaleY(1);
+                background: #fff;
+            }
+            40% {
+                transform: scaleY(0.4);
+                background: #ff4444;
+            }
+            100% {
+                transform: scaleY(0.4);
+                background: #ff4444;
+            }
+        }
+
+        /* Hide loader when content is loaded */
+        .loaded #loader-wrapper {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* Add notification styles */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transform: translateX(120%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 99999;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            max-width: 300px;
+            min-width: 250px;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .notification i {
+            font-size: 1.2rem;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification.success {
+            border-left: 4px solid #4CAF50;
+            background: linear-gradient(90deg, rgba(76, 175, 80, 0.1) 0%, #1a1a1a 100%);
+        }
+
+        .notification.success i {
+            color: #4CAF50;
+        }
+
+        .notification.error {
+            border-left: 4px solid #f44336;
+            background: linear-gradient(90deg, rgba(244, 67, 54, 0.1) 0%, #1a1a1a 100%);
+        }
+
+        .notification.error i {
+            color: #f44336;
+        }
+
+        .notification.info {
+            border-left: 4px solid #2196F3;
+            background: linear-gradient(90deg, rgba(33, 150, 243, 0.1) 0%, #1a1a1a 100%);
+        }
+
+        .notification.info i {
+            color: #2196F3;
+        }
+
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notification-title {
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .notification-message {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            word-wrap: break-word;
+        }
+    </style>
+
+    <script>
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Check authentication
+        auth.onAuthStateChanged(function(user) {
+            if (user) {
+                loadSensors().then(() => {
+                    // Hide loader after content is loaded
+                    document.body.classList.add('loaded');
+                });
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        function loadSensors() {
+            const user = auth.currentUser;
+            const sensorsGrid = document.querySelector('.sensors-grid');
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const sensors = data.motionSensors || [];
+                    
+                    sensorsGrid.innerHTML = sensors.map(sensor => createSensorCard(sensor)).join('');
+                }
+            });
+        }
+
+        function createSensorCard(sensor) {
+            const lastEvent = sensor.lastEvent || { type: 'none', timestamp: Date.now() };
+            const isActive = lastEvent.type === 'detected';
+            
+            // Filter to only show detection events
+            const recentDetections = (sensor.recentEvents || [])
+                .filter(event => event.type === 'detected')
+                .slice(0, 3);
+            
+            return `
+                <div class="sensor-card">
+                    <div class="sensor-header">
+                        <div class="sensor-title">
+                            <div class="sensor-icon">
+                                <i class="fas fa-${sanitizeHTML(sensor.icon || 'radar')}"></i>
+                            </div>
+                            <h3>${sanitizeHTML(sensor.name)}</h3>
+                        </div>
+                        <div class="sensor-actions">
+                            <button class="action-btn toggle-btn ${sensor.enabled ? 'enabled' : 'disabled'}" 
+                                    onclick="toggleSensor('${sanitizeHTML(sensor.id)}', ${!sensor.enabled})">
+                                <div class="toggle-circle"></div>
+                            </button>
+                            <button class="action-btn" onclick="showEditSensorPopup('${sanitizeHTML(sensor.id)}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn" onclick="deleteSensor('${sanitizeHTML(sensor.id)}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="sensor-info">
+                        ${sanitizeHTML(sensor.description || 'Sem descrição')}
+                    </div>
+                    <div class="sensor-status">
+                        <div class="status-indicator" style="background: ${isActive ? '#4CAF50' : '#888'}"></div>
+                        <div class="status-text" style="color: ${isActive ? '#4CAF50' : '#888'}">
+                            ${isActive ? 'Movimento Detectado' : 'Sem Movimento'}
+                        </div>
+                    </div>
+                    <div class="sensor-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${sanitizeHTML(String(sensor.detectionCount || 0))}</div>
+                            <div class="stat-label">Detecções</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${formatTimestamp(lastEvent.timestamp)}</div>
+                            <div class="stat-label">Última Atividade</div>
+                        </div>
+                    </div>
+                    <div class="motion-history">
+                        ${recentDetections.map(event => {
+                            const nextStopEvent = (sensor.recentEvents || []).find(e => 
+                                e.type === 'stopped' && e.timestamp < event.timestamp
+                            );
+                            const duration = nextStopEvent ? calculateDuration(event.timestamp, nextStopEvent.timestamp) : '';
+                            
+                            return `
+                                <div class="motion-event">
+                                    <span class="motion-event-time">${formatTimestamp(event.timestamp)}</span>
+                                    ${duration ? `<span class="motion-event-duration">${duration}</span>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <a href="sensor-history.html?id=${sanitizeHTML(sensor.id)}" class="view-history-btn">
+                        Ver Histórico Completo
+                    </a>
+                </div>
+            `;
+        }
+
+        function showAddSensorPopup() {
+            const popup = document.createElement('div');
+            popup.className = 'settings-modal-overlay';
+            popup.innerHTML = `
+                <div class="settings-modal">
+                    <div class="settings-header">
+                        <h2>Novo Sensor de Movimento</h2>
+                        <button class="close-btn" onclick="this.closest('.settings-modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="settings-content">
+                        <div class="settings-section">
+                            <div class="settings-field">
+                                <label for="sensorIcon">Ícone</label>
+                                <div class="icon-selector">
+                                    <button type="button" class="icon-option" data-icon="radar">
+                                        <i class="fas fa-radar"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="eye">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="camera">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="shield-halved">
+                                        <i class="fas fa-shield-halved"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="bell">
+                                        <i class="fas fa-bell"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="video">
+                                        <i class="fas fa-video"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="house">
+                                        <i class="fas fa-house"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="door-open">
+                                        <i class="fas fa-door-open"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="warehouse">
+                                        <i class="fas fa-warehouse"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="stairs">
+                                        <i class="fas fa-stairs"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="kitchen-set">
+                                        <i class="fas fa-kitchen-set"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="couch">
+                                        <i class="fas fa-couch"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="bed">
+                                        <i class="fas fa-bed"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="bath">
+                                        <i class="fas fa-bath"></i>
+                                    </button>
+                                    <button type="button" class="icon-option" data-icon="car">
+                                        <i class="fas fa-car"></i>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="sensorIcon" value="radar">
+                            </div>
+                            <div class="settings-field">
+                                <label for="sensorName">Nome do Sensor</label>
+                                <input type="text" id="sensorName" placeholder="Ex: Sensor da Sala">
+                            </div>
+                            <div class="settings-field">
+                                <label for="sensorDescription">Descrição</label>
+                                <textarea id="sensorDescription" placeholder="Descrição opcional do sensor"></textarea>
+                            </div>
+                            <div class="settings-field">
+                                <label for="sensitivity">Sensibilidade</label>
+                                <div class="sensitivity-slider">
+                                    <input type="range" id="sensitivity" min="1" max="10" value="5">
+                                    <div class="sensitivity-labels">
+                                        <span>Baixa</span>
+                                        <span>Média</span>
+                                        <span>Alta</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-footer">
+                        <button class="settings-button cancel" onclick="this.closest('.settings-modal-overlay').remove()">Cancelar</button>
+                        <button class="settings-button save" onclick="addSensor()">Adicionar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+
+            // Setup icon selector
+            setupIconSelector(popup);
+
+            // Setup slider
+            const slider = document.getElementById('sensitivity');
+            updateSliderBackground(slider);
+            slider.addEventListener('input', function() {
+                updateSliderBackground(this);
+            });
+        }
+
+        function addSensor() {
+            const name = sanitizeHTML(document.getElementById('sensorName').value.trim());
+            const description = sanitizeHTML(document.getElementById('sensorDescription').value.trim());
+            const sensitivity = document.getElementById('sensitivity').value;
+            const icon = sanitizeHTML(document.getElementById('sensorIcon').value);
+            
+            if (!name) {
+                showToast('Nome do sensor é obrigatório', 'error');
+                return;
+            }
+
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const newSensor = {
+                id: Date.now().toString(),
+                name,
+                description,
+                icon,
+                sensitivity: parseInt(sensitivity),
+                detectionCount: 0,
+                lastEvent: {
+                    type: 'none',
+                    timestamp: Date.now()
+                },
+                recentEvents: [],
+                createdAt: Date.now(),
+                enabled: true
+            };
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const sensors = doc.data().motionSensors || [];
+                sensors.push(newSensor);
+                
+                return db.collection('users').doc(user.uid).update({ motionSensors: sensors });
+            }).then(() => {
+                document.querySelector('.settings-modal-overlay').remove();
+                showToast(`Sensor ${name} adicionado com sucesso!`, 'success');
+                loadSensors();
+            }).catch(error => {
+                console.error("Error adding sensor:", error);
+                showToast('Erro ao adicionar sensor', 'error');
+            });
+        }
+
+        function showEditSensorPopup(sensorId) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const sensor = doc.data().motionSensors.find(s => s.id === sensorId);
+                    if (!sensor) return;
+
+                    const popup = document.createElement('div');
+                    popup.className = 'settings-modal-overlay';
+                    popup.innerHTML = `
+                        <div class="settings-modal">
+                            <div class="settings-header">
+                                <h2>Editar Sensor</h2>
+                                <button class="close-btn" onclick="this.closest('.settings-modal-overlay').remove()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="settings-content">
+                                <div class="settings-section">
+                                    <div class="settings-field">
+                                        <label for="sensorIcon">Ícone</label>
+                                        <div class="icon-selector">
+                                            <button type="button" class="icon-option" data-icon="radar">
+                                                <i class="fas fa-radar"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="eye">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="camera">
+                                                <i class="fas fa-camera"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="shield-halved">
+                                                <i class="fas fa-shield-halved"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="bell">
+                                                <i class="fas fa-bell"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="video">
+                                                <i class="fas fa-video"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="house">
+                                                <i class="fas fa-house"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="door-open">
+                                                <i class="fas fa-door-open"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="warehouse">
+                                                <i class="fas fa-warehouse"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="stairs">
+                                                <i class="fas fa-stairs"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="kitchen-set">
+                                                <i class="fas fa-kitchen-set"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="couch">
+                                                <i class="fas fa-couch"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="bed">
+                                                <i class="fas fa-bed"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="bath">
+                                                <i class="fas fa-bath"></i>
+                                            </button>
+                                            <button type="button" class="icon-option" data-icon="car">
+                                                <i class="fas fa-car"></i>
+                                            </button>
+                                        </div>
+                                        <input type="hidden" id="editSensorIcon" value="${sanitizeHTML(sensor.icon || 'radar')}">
+                                    </div>
+                                    <div class="settings-field">
+                                        <label for="editSensorName">Nome do Sensor</label>
+                                        <input type="text" id="editSensorName" value="${sanitizeHTML(sensor.name)}" placeholder="Ex: Sensor da Sala">
+                                    </div>
+                                    <div class="settings-field">
+                                        <label for="editSensorDescription">Descrição</label>
+                                        <textarea id="editSensorDescription" placeholder="Descrição do sensor">${sanitizeHTML(sensor.description || '')}</textarea>
+                                    </div>
+                                    <div class="settings-field">
+                                        <label for="editSensitivity">Sensibilidade</label>
+                                        <div class="sensitivity-slider">
+                                            <input type="range" id="editSensitivity" min="1" max="10" value="${sensor.sensitivity || 5}">
+                                            <div class="sensitivity-labels">
+                                                <span>Baixa</span>
+                                                <span>Média</span>
+                                                <span>Alta</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-footer">
+                                <button class="settings-button cancel" onclick="this.closest('.settings-modal-overlay').remove()">Cancelar</button>
+                                <button class="settings-button save" onclick="saveSensorEdit('${sanitizeHTML(sensor.id)}')">Salvar</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(popup);
+
+                    // Setup icon selector
+                    setupIconSelector(popup);
+                    const currentIcon = sanitizeHTML(sensor.icon || 'radar');
+                    popup.querySelector(`.icon-option[data-icon="${currentIcon}"]`).classList.add('selected');
+
+                    // Setup slider
+                    const slider = document.getElementById('editSensitivity');
+                    if (slider) {
+                        updateSliderBackground(slider);
+                        slider.addEventListener('input', function() {
+                            updateSliderBackground(this);
+                        });
+                    }
+                }
+            });
+        }
+
+        function saveSensorEdit(sensorId) {
+            const name = sanitizeHTML(document.getElementById('editSensorName').value.trim());
+            const description = sanitizeHTML(document.getElementById('editSensorDescription').value.trim());
+            const sensitivity = document.getElementById('editSensitivity').value;
+            const icon = sanitizeHTML(document.getElementById('editSensorIcon').value);
+
+            if (!name) {
+                showToast('Nome do sensor é obrigatório', 'error');
+                return;
+            }
+
+            const user = auth.currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const sensors = doc.data().motionSensors || [];
+                    const sensorIndex = sensors.findIndex(s => s.id === sensorId);
+                    
+                    if (sensorIndex === -1) {
+                        showToast('Sensor não encontrado', 'error');
+                        return;
+                    }
+
+                    sensors[sensorIndex] = {
+                        ...sensors[sensorIndex],
+                        name,
+                        description,
+                        icon,
+                        sensitivity: parseInt(sensitivity),
+                        lastUpdated: Date.now()
+                    };
+
+                    return db.collection('users').doc(user.uid).update({ motionSensors: sensors });
+                }
+            }).then(() => {
+                document.querySelector('.settings-modal-overlay').remove();
+                showToast('Sensor atualizado com sucesso', 'success');
+                loadSensors();
+            }).catch(error => {
+                console.error("Error updating sensor:", error);
+                showToast('Erro ao atualizar sensor', 'error');
+            });
+        }
+
+        function deleteSensor(sensorId) {
+            if (!confirm('Tem certeza que deseja excluir este sensor?')) return;
+
+            const user = auth.currentUser;
+            if (!user) return;
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const sensors = doc.data().motionSensors || [];
+                const updatedSensors = sensors.filter(s => s.id !== sensorId);
+                
+                return db.collection('users').doc(user.uid).update({ motionSensors: updatedSensors });
+            }).then(() => {
+                showToast('Sensor excluído com sucesso!', 'success');
+                loadSensors();
+            }).catch(error => {
+                console.error("Error deleting sensor:", error);
+                showToast('Erro ao excluir sensor', 'error');
+            });
+        }
+
+        function formatTimestamp(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+
+            // Show relative time for recent events
+            if (seconds < 30) {
+                return 'Agora mesmo';
+            } else if (seconds < 60) {
+                return `${seconds} segundos atrás`;
+            } else if (minutes < 60) {
+                return `${minutes} ${minutes === 1 ? 'm' : 'm'} atrás`;
+            } else if (hours < 24) {
+                return `${hours} ${hours === 1 ? 'h' : 'h'} atrás`;
+            } else if (days < 7) {
+                return `${days} ${days === 1 ? 'dia' : 'dias'} atrás`;
+            }
+
+            // For older events, show the full date and time
+            const date = new Date(timestamp);
+            return date.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function sanitizeHTML(input) {
+            if (!input) return '';
+            return input.replace(/[&<>"']/g, function(match) {
+                const escape = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                };
+                return escape[match];
+            });
+        }
+
+        // Setup real-time updates for motion sensors
+        function setupMotionSensorListener() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const unsubscribe = db.collection('users').doc(user.uid)
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        loadSensors();
+                    }
+                }, (error) => {
+                    console.error("Error setting up motion sensor listener:", error);
+                });
+
+            window.motionSensorUnsubscribe = unsubscribe;
+        }
+
+        // Initialize listeners when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    if (window.motionSensorUnsubscribe) {
+                        window.motionSensorUnsubscribe();
+                    }
+                    
+                    setupMotionSensorListener();
+                    loadSensors().then(() => {
+                        // Hide loader after content is loaded
+                        document.body.classList.add('loaded');
+                    });
+                } else {
+                    if (window.motionSensorUnsubscribe) {
+                        window.motionSensorUnsubscribe();
+                    }
+                }
+            });
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (window.motionSensorUnsubscribe) {
+                window.motionSensorUnsubscribe();
+            }
+        });
+
+        // Add slider animation
+        function updateSliderBackground(slider) {
+            const min = slider.min || 1;
+            const max = slider.max || 10;
+            const value = slider.value;
+            const percentage = ((value - min) / (max - min)) * 100;
+            slider.style.setProperty('--value-percent', `${percentage}%`);
+        }
+
+        // Add setupIconSelector function
+        function setupIconSelector(container) {
+            const iconOptions = container.querySelectorAll('.icon-option');
+            const iconInput = container.querySelector('input[type="hidden"]');
+
+            iconOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    iconOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    iconInput.value = option.dataset.icon;
+                });
+            });
+        }
+
+        // Add toggleSensor function
+        function toggleSensor(sensorId, enabled) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            // Immediately update the visual state
+            const toggleBtn = document.querySelector(`[onclick="toggleSensor('${sensorId}', ${!enabled})"]`);
+            if (toggleBtn) {
+                toggleBtn.classList.remove(enabled ? 'disabled' : 'enabled');
+                toggleBtn.classList.add(enabled ? 'enabled' : 'disabled');
+                
+                const toggleCircle = toggleBtn.querySelector('.toggle-circle');
+                if (toggleCircle) {
+                    toggleCircle.style.background = enabled ? '#4CAF50' : '#f44336';
+                    toggleCircle.style.boxShadow = enabled ? '0 0 10px #4CAF50' : '0 0 10px #f44336';
+                }
+                
+                toggleBtn.setAttribute('onclick', `toggleSensor('${sensorId}', ${!enabled})`);
+            }
+
+            db.collection('users').doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    const sensors = doc.data().motionSensors || [];
+                    const sensorIndex = sensors.findIndex(s => s.id === sensorId);
+                    
+                    if (sensorIndex === -1) {
+                        showToast('Sensor não encontrado', 'error');
+                        return;
+                    }
+
+                    // Update sensor state
+                    sensors[sensorIndex].enabled = enabled;
+                    return db.collection('users').doc(user.uid).update({ motionSensors: sensors });
+                }
+            }).then(() => {
+                showToast(enabled ? 'Sensor ativado' : 'Sensor desativado', 'success');
+                loadSensors();
+            }).catch(error => {
+                console.error("Error toggling sensor:", error);
+                showToast('Erro ao alterar estado do sensor', 'error');
+                // Revert visual state if error
+                if (toggleBtn) {
+                    toggleBtn.classList.remove(enabled ? 'enabled' : 'disabled');
+                    toggleBtn.classList.add(enabled ? 'disabled' : 'enabled');
+                    
+                    const toggleCircle = toggleBtn.querySelector('.toggle-circle');
+                    if (toggleCircle) {
+                        toggleCircle.style.background = enabled ? '#f44336' : '#4CAF50';
+                        toggleCircle.style.boxShadow = enabled ? '0 0 10px #f44336' : '0 0 10px #4CAF50';
+                    }
+                    
+                    toggleBtn.setAttribute('onclick', `toggleSensor('${sensorId}', ${enabled})`);
+                }
+            });
+        }
+
+        // Add the calculateDuration function
+        function calculateDuration(start, end) {
+            const diff = Math.abs(end - start);
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            let duration = '';
+            
+            if (hours > 0) {
+                duration += `${hours}h `;
+            }
+            if (minutes % 60 > 0) {
+                duration += `${minutes % 60}m `;
+            }
+            if (seconds % 60 > 0 || duration === '') {
+                duration += `${seconds % 60}s`;
+            }
+            
+            return duration.trim();
+        }
+    </script>
+</body>
+</html>
